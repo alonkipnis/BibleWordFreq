@@ -1,0 +1,47 @@
+# Here you can define all your data sets by using simple YAML syntax.
+#
+# Documentation for this file format can be found in "The Data Catalog"
+# Link: https://kedro.readthedocs.io/en/stable/04_user_guide/04_data_catalog.html
+
+oshb_raw:
+  type: biblical_scripts.extras.datasets.OSHBDataset.OSHB
+  morphhb_path: data/01_raw/morphhb/wlc
+  catalog_file: data/01_raw/reference_data.csv
+  out_file: data/01_raw/project_data.csv
+  
+oshb_parsed:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/oshd_parsed.csv
+    
+topics_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/reference_data_topics.csv
+    
+data_proc:
+  type: pandas.CSVDataSet
+  filepath: data/04_feature/data_proc.csv
+  versioned: false
+
+vocabulary:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/vocabulary.csv
+
+sim_res:
+  type: pandas.CSVDataSet
+  filepath: data/06_model_output/sim_res.csv
+
+#out_fig:
+#  type: biblical_scripts.extras.datasets.plotnine_fig
+#  filepath: data/08_reporting/figs/
+
+sim_acc:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/sim_acc.csv
+  versioned: true
+  
+HC_BS_res:
+  type: pandas.CSVDataSet
+  filepath: data/07_model_output/HC_BS_res.csv
+  versioned: false
+
+
