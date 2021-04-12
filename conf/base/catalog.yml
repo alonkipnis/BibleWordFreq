@@ -26,6 +26,10 @@ vocabulary:
   type: pandas.CSVDataSet
   filepath: data/05_model_input/vocabulary.csv
 
+reduced_vocabulary:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/reduced_vocabulary.csv
+
 sim_res:
   type: pandas.CSVDataSet
   filepath: data/06_model_output/sim_res.csv
@@ -39,9 +43,12 @@ sim_acc:
   filepath: data/08_reporting/sim_acc.csv
   versioned: true
   
-HC_BS_res:
+BS_res:
   type: pandas.CSVDataSet
-  filepath: data/07_model_output/HC_BS_res.csv
+  filepath: data/07_sim_output/BS_res.csv
   versioned: false
 
-
+cross_val:
+  type: pandas.CSVDataSet
+  filepath: data/07_sim_output/cross_val.csv
+  versioned: false

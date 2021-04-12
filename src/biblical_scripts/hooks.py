@@ -38,6 +38,9 @@ from kedro.versioning import Journal
 from biblical_scripts.pipelines.OSHB import pipeline as oshb
 from biblical_scripts.pipelines.data_engineering import pipeline as de
 from biblical_scripts.pipelines.data_science import pipeline as ds
+from biblical_scripts.pipelines.data_science1 import pipeline as ds1
+from biblical_scripts.pipelines.data_science_val import pipeline as ds_val
+from biblical_scripts.pipelines.bootstrapping import pipeline as bs
 
 class ProjectHooks:
     @hook_impl
@@ -50,13 +53,19 @@ class ProjectHooks:
         """
         de_pipeline = de.create_pipeline()
         ds_pipeline = ds.create_pipeline()
+        ds1_pipeline = ds1.create_pipeline()
+        ds_val_pipeline = ds_val.create_pipeline()
+        bs_pipeline = bs.create_pipeline()
         oshb_pipeline = oshb.create_pipeline()
 
         return {
             "ds" : ds_pipeline,
+            "ds1" : ds1_pipeline,
+            "ds_val" : ds_val_pipeline,
             "oshb" : oshb_pipeline,
             "de" : de_pipeline,
-            "__default__" : ds_pipeline}
+            "bs" : bs_pipeline,
+            "__default__" : de_pipeline+ds_val_pipeline}
 
     @hook_impl
     def register_config_loader(self, conf_paths: Iterable[str]) -> ConfigLoader:

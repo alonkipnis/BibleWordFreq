@@ -1,0 +1,32 @@
+preprocessing:
+  extract_prefix: true # split lemmas by prefix and suffix
+  extract_suffix: false
+  morph_code_only: true 
+  flat_suff_person: true  # remove person form indicator or not
+  ng_min: 1  # min_ngram
+  ng_max: 1  # max_ngram (must be larger than ng_min)
+  pad: false # add <start>/<end> symbols before/after each phrase
+  #to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
+              # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
+  to_replace: # morpholical pad_ledcodes to replace by a symbol
+    - Ac # cardinal number
+    - Ng # noun gentilic
+    - Np # name proper
+    
+vocab:
+  no_tokens: 500  # most frequent tokens
+  by_author: true  # most frequent by each author of the known_authors list
+
+HC:
+  - gamma: .3
+  - stbl: true
+  - min_cnt: 3
+
+value: "HC"
+
+known_authors:
+  - Dtr
+  - DtrH
+  - P
+  
+min_length_to_report: 315 # only include texts of at least min_length words

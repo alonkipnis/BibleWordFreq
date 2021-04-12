@@ -7,15 +7,6 @@ import logging
 from biblical_scripts.pipelines.data_science.AuthorshipAttribution.AuthAttLib import AuthorshipAttributionDTM
 from biblical_scripts.pipelines.data_science.AuthorshipAttribution.MultiDoc import CompareDocs
 from typing import Dict, List
-from plotnine import *
-import plotnine
-LIST_OF_COLORS = ['tab:red', 'tab:blue','tab:gray', "#00BA38", 
-    'tab:olive', "#619CFF", 'tab:orange', "#F8766D",
-    'tab:purple', 'tab:brown', 'tab:pink',
-    'tab:green', 'tab:cyan', 'royalblue', 'darksaltgray', 'forestgreen',
-    'cyan', 'navy'
-    'magenta', '#595959', 'lightseagreen', 'orangered', 'crimson'
-]
 
 def _n_most_frequent_by_author(ds, n) :
     return ds.groupby(['author', 'feature'])\
@@ -39,10 +30,12 @@ def build_vocab(data, params, known_authors) :
         r = _n_most_frequent_by_author(ds, n)
     else :
         r = _n_most_frequent(ds, n)
-    logging.info(f"Constructed a vocabulary of {len(r)} features")
+    r = r[~r.duplicated()]
+    logging.info(f"Constructed vocabulary with {len(r)} features")
     return r
 
-def compute_sim(data : pd.DataFrame, vocabulary : pd.DataFrame, params, known_authors : List) -> pd.DataFrame :
+def OLD_compute_sim(data : pd.DataFrame, vocabulary : pd.DataFrame,
+                    params, known_authors : List) -> pd.DataFrame :
     """
     Build model for comparing docs and authors based on word-frequencies
     
@@ -68,7 +61,68 @@ def compute_sim(data : pd.DataFrame, vocabulary : pd.DataFrame, params, known_au
     df_res = df_res.merge(doc_lengths, on = 'doc_id')
     return df_res
 
-def evaluate_accuracy(df_res: pd.DataFrame, known_authors : List, min_length_to_report : int, params) -> pd.DataFrame :
+def compute_sim(data : pd.DataFrame, vocabulary : pd.DataFrame,
+                model_params, known_authors : List) -> pd.DataFrame :
+    """
+    Build model for comparing docs and authors based on word-frequencies
+    
+    Args:
+    data        a dataframe representing tokens by docs by corpus
+    vocabulary  a list of words by which docs are compared
+    known_authors   only compare against corpora from this list
+    
+    Returns:
+    df_res      Each row is the comparison of a doc against a corpus in known_authors
+    """
+    
+    vocab = vocabulary.feature.astype(str).to_list()
+    md = CompareDocs(vocabulary=vocab)
+    ds=data[['author', 'feature', 'token_id', 'chapter']]
+    ds=ds.rename(columns = {'chapter' : 'doc_id'}).dropna()
+    ds['doc_id'] += ' by '
+    ds['doc_id'] += ds['author'] #sometimes there are multiple authors per chapter
+    
+    train_data = {}
+    for auth in known_authors :
+        train_data[auth] = ds[ds.author==auth]
+
+    md.fit(train_data)
+    observable = r"HC|Fisher|chisq"
+    
+    df_res = pd.DataFrame()
+    for doc_id in ds.doc_id.unique() :
+        tested_doc = ds[ds.doc_id==doc_id]
+        auth = tested_doc.author.values[0]
+        df_rec = md.test_doc(tested_doc, of_cls = auth)
+        r = df_rec.iloc[:,df_rec.columns.str.contains(observable)].mean()
+        r['doc_id'] = doc_id
+        r['author'] = auth
+        r['len'] = len(tested_doc)
+        df_res = df_res.append(r, ignore_index=True)
+    
+    df_eval = df_res.melt(['author', 'doc_id', 'len'])
+    return df_eval
+
+def evaluate_accuracy(df : pd.DataFrame, known_authors : List, report_params, parameters) -> float :
+    
+    def _eval_succ(df) :
+        df['wrt_author'] = df['variable'].str.extract(r'([^:]+):')
+        idx_min = df.groupby(['doc_id', 'author'])['value'].idxmin()
+        res_min = df.loc[idx_min, :].rename(columns={'wrt_author' : 'most_sim'})
+        res_min.loc[:, 'succ'] = res_min.author == res_min.most_sim
+        return res_min
+
+    value = report_params['value']
+    df1 = df[df['variable'].str.contains(f":{value}")]
+    df1 = df1[df1.author.isin(known_authors)].reset_index()
+
+    res = _eval_succ(df1)
+    res['acc'] = res.succ.mean()
+    res['param'] = str(parameters)
+    return res
+
+def OLD_evaluate_accuracy(df_res: pd.DataFrame, known_authors : List,
+                          min_length_to_report : int, params) -> pd.DataFrame :
     """
     Evaluate accuracy of attribution in min discrepancy manner
     
@@ -96,55 +150,3 @@ def evaluate_accuracy(df_res: pd.DataFrame, known_authors : List, min_length_to_
         
     res['params'] = str(params)
     return pd.DataFrame(res, index=[0])
-
-def _plot_author_pair(df, value = 'HC', wrt_authors = [],
-                 show_legend=True):
-
-    df.loc[:,value] = df[value].astype(float)
-    df1 = df.filter(['doc_id', 'author', 'wrt_author', value])\
-            .pivot_table(index = ['doc_id','author'],
-                         columns = 'wrt_author',
-                         values = [value])[value].reset_index()
-
-    lo_authors = pd.unique(df.wrt_author)
-    no_authors = len(lo_authors)
-
-    if no_authors < 2 :
-        raise ValueError
-
-    if wrt_authors == [] :
-        wrt_authors = (lo_authors[0],lo_authors[1])
-
-    color_map = LIST_OF_COLORS
-
-    df1.loc[:, 'x'] = df1.loc[:, wrt_authors[0]].astype('float')
-    df1.loc[:, 'y'] = df1.loc[:, wrt_authors[1]].astype('float')
-    p = (
-        ggplot(aes(x='x', y='y', color='author', shape = 'author'), data=df1) +
-        geom_point(show_legend=show_legend, size = 3) + geom_abline(alpha=0.5) +
-        # geom_text(aes(label = 'doc_id', check_overlap = True)) +
-        xlab(wrt_authors[0]) + ylab(wrt_authors[1]) +
-        scale_color_manual(values=color_map) +  #+ xlim(0,35) + ylim(0,35)
-        theme(legend_title=element_blank(), legend_position='top'))
-    return p
-
-def illustrate_results(df, value, known_authors) :
-    """
-    To do: create a partioned dataset for saving figs to disk
-    """
-
-    plotnine.options.figure_size = (7, 6)
-    path = "data/08_reporting/Figs"
-
-    df_figs = pd.DataFrame()
-    for auth1 in known_authors :
-        for auth2 in known_authors :
-            if auth1 < auth2 :
-                auth_pair = (auth1, auth2)
-                df_disp = df
-                df_disp = df[df.author.isin(auth_pair)]
-                fn = f'{auth1}_vs_{auth2}.png'
-                p = _plot_author_pair(df_disp, value = value, wrt_authors=auth_pair) #+ xlim(0,15) + ylim(0,15)
-                p.save(path + '/' + fn)
-                #df_figs = df_figs.append({'authors' : auth_pair, 'fig' : p})
-    return df_figs

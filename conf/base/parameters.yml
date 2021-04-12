@@ -1,34 +1,54 @@
 preprocessing:
   extract_prefix: true # split lemmas by prefix and suffix
-  extract_suffix: true
-  morph_code_only: true 
-  flat_suff_person: false  # remove person form indicator or not
+  extract_suffix: false # REDUNDENT
+  morph_code_only: false 
+  flat_suff_person: true  # remove person form indicator or not
   ng_min: 1  # min_ngram
-  ng_max: 3  # max_ngram (must be larger than ng_min)
-  pad: false # add <start>/<end> symbols before/after each phrase
-  #to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
+  ng_max: 1  # max_ngram (must be larger than ng_min)
+  pad: false # add <start>/<end> symbols at the begining/ending of verses
+  to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
               # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
-  to_replace: # morpholical pad_ledcodes to replace by a symbol
-    - Ac # cardinal number
-    - Ng # noun gentilic
-    - Np # name proper
-    #- Nc # noun comon
+    - Np
+    - Ng
+    - Ac
+#  to_replace: # morpholical pad_ledcodes to replace by a symbol
+#    - Ac # cardinal number
+#    - Ng # noun gentilic
+#    - Np # name proper
+    # - Nc # noun comon
+    # - Vq  # verb
     #-Pd # preposition definite article
     
 vocab:
   no_tokens: 500  # most frequent tokens
   by_author: true  # most frequent by each author of the known_authors list
 
-HC:
-  - gamma: .25
-  - stbl: true
-  - min_cnt: 10
+model:
+  feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
+  gamma: .2
+  stbl: true
+  min_cnt: 3
+  measures: 
+    - 'HC'
+    - 'Fisher'
+    - 'chisq'
 
-value: "HC"
+sim_null:
+  n: 50
+  sampling_method: "doc_id"
+  k_docs: 1
+  sample_w_replacements: true
+  sample_contiguous: false
+  random: true
 
 known_authors:
   - Dtr
   - DtrH
   - P
+
+report:
+  value: 'HC'
+  #value: 'Fisher'
+  #value: 'chisq'
+  min_length_to_report: 100 # only include texts of at least min_length words
   
-min_length_to_report: 315 # only include texts of at least min_length words

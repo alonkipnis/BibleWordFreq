@@ -28,9 +28,10 @@
 
 """Project settings."""
 from biblical_scripts.hooks import ProjectHooks
+from biblical_scripts.debugging.pipeline_debug import PDBPipelineDebugHook
 
 # Instantiate and list your project hooks here
-HOOKS = (ProjectHooks(),)
+HOOKS = (ProjectHooks(),PDBPipelineDebugHook(),)
 
 # List the installed plugins for which to disable auto-registry
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)

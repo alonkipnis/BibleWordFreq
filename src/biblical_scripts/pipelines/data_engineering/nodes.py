@@ -1,4 +1,3 @@
-# project: bib-scripts
 # pipeline: data engineering
 
 import pandas as pd
@@ -30,6 +29,37 @@ def _get_topics(topics_data) :
         topic_verse = topics_data.filter(['topic', 'verse']).set_index('verse')
         
         return topic_verse
+    
+def _n_most_frequent_by_author(ds, n) :
+    return ds.groupby(['author', 'feature'])\
+            .count()\
+            .sort_values(by='chapter', ascending=False)\
+            .reset_index()\
+            .groupby(['author'])\
+            .head(n).filter(['feature'])
+
+def _n_most_frequent(ds, n) :
+    return ds.groupby(['feature'])\
+            .count()\
+            .sort_values(by='chapter', ascending=False)\
+            .reset_index()\
+            .head(n).filter(['feature'])
+
+def build_vocab(data, params, known_authors) :
+    n = params['no_tokens']
+    by_author = params['by_author']
+    
+    ds = data[data.author.isin(known_authors)]
+    ds = ds[~ds.feature.str.contains(r"\[[a-zA-Z0-9]+\]")] # remove code
+    if by_author :
+        r = _n_most_frequent_by_author(ds, n)
+    else :
+        r = _n_most_frequent(ds, n)
+    #import pdb; pdb.set_trace()
+    r = r.drop_duplicates()
+    
+    logging.info(f"Obtained a vocabulary of {len(r)} features")
+    return r
     
 def add_topics(data, topics_data) :
     """
@@ -66,5 +96,8 @@ def add_convert(data : pd.DataFrame, data_org) -> pd.DataFrame :
     Add a column showing converted features 
     """
     convert=Convert(data_org)
-    data['feature-trans'] = data.feature.apply(convert.ng2term)
+    try :
+        data['feature-trans'] = data['feature'].apply(str).apply(eval).apply(convert.to_term)
+    except :
+        data['feature-trans'] = data['feature'].apply(str).apply(convert.to_term)
     return data
