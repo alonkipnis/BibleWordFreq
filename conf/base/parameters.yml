@@ -33,7 +33,7 @@ model:
     #- 'Fisher'
     #- 'chisq'
 
-sim_null:
+sim_full: # these parameters are not in used, only make sure that n is larger than max_no_docs_per_corpus
   n: 100
   sampling_method: "doc_id"
   k_docs: 1

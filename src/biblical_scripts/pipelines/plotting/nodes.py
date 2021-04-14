@@ -58,7 +58,7 @@ def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
         theme(legend_title=element_blank(), legend_position='top'))
     return p
 
-def plot_sim(sim_null_res, params, known_authors) :
+def plot_sim(sim_full_res, params, known_authors) :
     """
     To do: create a partioned dataset for saving figs to disk
     """
@@ -66,7 +66,7 @@ def plot_sim(sim_null_res, params, known_authors) :
     path = params['fig_path']
     value = params['value']
     
-    df = _prepare_res(sim_null_res)
+    df = _prepare_res(sim_full_res)
     
     df = df[df.len >= params['min_length_to_report']]
     #df['wrt_author'] = df.loc[:,'variable'].str.extract(r'([^:]+):') # get corpus name
@@ -95,14 +95,14 @@ def _add_prob(res1) :
     return res1
 
 
-def _plot_sim_null_doc(res1) :
+def _plot_sim_full_doc(res1) :
 
-    res1_null = res1[res1.author == 'doc_smp'] # only artificially gen'd data 
+    res1_full = res1[res1.author == 'doc_smp'] # only artificially gen'd data
     
     res1_doc = res1[res1.author == 'doc0'] # actual tested doc
 
     p = (ggplot(aes(x='value', fill = 'corpus', y='..density..',
-                color='corpus', label='corpus'), data = res1_null)
+                color='corpus', label='corpus'), data = res1_full)
              + geom_histogram(alpha=0.5,position='dodge') 
              #+ geom_density(alpha = 0.5)
              + geom_vline(aes(xintercept='value', color='corpus'),
@@ -113,10 +113,10 @@ def _plot_sim_null_doc(res1) :
                               size=10, colour = "black") ) 
     return p
     
-def plot_sim_null(sim_null_res, params) :
+def plot_sim_full(sim_full_res, params) :
     path = params['fig_path']
     
-    res = _add_prob(sim_null_res)
+    res = _add_prob(sim_full_res)
     value = params['value']
     res = res[res.variable.str.contains(value)]
     lo_docs = res.doc.unique()
@@ -125,12 +125,12 @@ def plot_sim_null(sim_null_res, params) :
     # doc_nm if one happended to be used in sampling
     
     for doc_nm in lo_docs :
-        p = _plot_sim_null_doc(res[(res.doc == doc_nm)]) 
+        p = _plot_sim_full_doc(res[(res.doc == doc_nm)])
         p = p + ggtitle(f'{doc_nm}')
         p.save(path + '/' + doc_nm + '.png')
 
 
-def plot_sim_null_BS(sim_null_res_BS, params) :
+def plot_sim_full_BS(sim_full_res_BS, params) :
     """
     Illustrate results of BS
     
@@ -155,12 +155,12 @@ def plot_sim_null_BS(sim_null_res_BS, params) :
     # doc_nm if one happended to be used in sampling
     
     for doc_nm in lo_docs :
-        p = _plot_sim_null_doc(res[(res.doc == doc_nm)])
+        p = _plot_sim_full_doc(res[(res.doc == doc_nm)])
         p = p + ggtitle(f'{doc_nm} BS')
         p.save(path + '/' + doc_nm +'_BS'+'.png')
 
 
-def plot_sim_BS(sim_null_res_BS, params, known_authors) :
+def plot_sim_BS(sim_full_res_BS, params, known_authors) :
     """
     To do: create a partioned dataset for saving figs to disk
     """
@@ -168,7 +168,7 @@ def plot_sim_BS(sim_null_res_BS, params, known_authors) :
     path = params['fig_path']
     value = params['value']
     
-    res = sim_null_res_BS[sim_null_res_BS.len >= params['min_length_to_report']]
+    res = sim_full_res_BS[sim_full_res_BS.len >= params['min_length_to_report']]
     res = res.rename(columns = {'value_mean' : 'value'})
     
     df = res[res.author == 'doc0'].drop('author', axis=1)

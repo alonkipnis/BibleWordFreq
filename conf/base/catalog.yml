@@ -43,24 +43,29 @@ sim_acc:
   filepath: data/08_reporting/sim_acc.csv
   versioned: false
   
-sim_null_res:
+sim_full_res:
   type: pandas.CSVDataSet
-  filepath: data/07_sim_output/sim_null_res.csv
+  filepath: data/07_sim_output/sim_full_res.csv
   versioned: false
 
-sim_null_res_BS:
+sim_full_res_BS:
   type: pandas.CSVDataSet
-  filepath: data/07_sim_output/sim_null_res_BS.csv
+  filepath: data/07_sim_output/sim_full_res_BS.csv
   versioned: false
 
-sim_null_res_BS_stats:
+sim_full_res_BS_stats:
   type: pandas.CSVDataSet
-  filepath: data/07_sim_output/sim_null_res_BS_stats.csv
+  filepath: data/07_sim_output/sim_full_res_BS_stats.csv
   versioned: false
 
 sim_report:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/report.csv
+  versioned: false
+
+sim_table_report:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/table_report.csv
   versioned: false
 
 cross_val:

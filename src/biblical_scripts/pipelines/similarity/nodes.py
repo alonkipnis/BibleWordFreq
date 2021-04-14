@@ -1,4 +1,4 @@
-# pipeline: sim_null
+# pipeline: sim_full
 # project: bib-scripts
 
 import pandas as pd
@@ -15,7 +15,7 @@ def _compare_doc_corpus(ds_doc, ds_corp, vocabulary, params_model) :
     res = model_predict(ds_doc, md)
     return res
 
-def sim_null(data, vocabulary, params_model, params_sim, known_authors) :
+def sim_full(data, vocabulary, params_model, params_sim, known_authors) :
     """
     For each document and each corpus, check the empirical distribution of
     HC-dist(doc, corpus). Do so by joining the document to the corpus and sample from the joint corpus.

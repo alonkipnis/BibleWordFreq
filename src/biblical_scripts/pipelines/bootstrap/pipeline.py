@@ -2,7 +2,7 @@
 
 from kedro.pipeline import node, Pipeline
 from biblical_scripts.pipelines.data_science.nodes import filter_by_author
-from biblical_scripts.pipelines.bootstrap.nodes import add_BS_stats
+from biblical_scripts.pipelines.report.nodes import add_stats_BS
 
 from biblical_scripts.pipelines.bootstrap.nodes import (bs_main, bs_main_dist)
 
@@ -16,13 +16,13 @@ def create_pipeline(**kwargs):
             ),
         node(func=bs_main_dist,
              inputs=["data", "params:bootstrapping",
-             "vocabulary", "params:model", "params:sim_null", "params:known_authors"],
-             outputs="sim_null_res_BS",
-            name="sim_null"
+             "vocabulary", "params:model", "params:sim_full", "params:known_authors"],
+             outputs="sim_full_res_BS",
+            name="sim_full"
             ),
-        node(func=add_BS_stats,
-        inputs=["sim_null_res_BS1"],
-        outputs=["sim_null_res_BS_stats"],
+        node(func=add_stats_BS,
+        inputs=["sim_full_res_BS1"],
+        outputs=["sim_full_res_BS_stats"],
         name="add_stats"
         )
         ]

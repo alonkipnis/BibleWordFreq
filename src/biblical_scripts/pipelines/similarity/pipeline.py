@@ -5,9 +5,9 @@ from biblical_scripts.pipelines.data_science.nodes import (build_reduced_vocab, 
 
 from biblical_scripts.pipelines.data_science_val.nodes import (cross_validation)
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
-from biblical_scripts.pipelines.similarity.nodes import sim_null
+from biblical_scripts.pipelines.similarity.nodes import sim_full
 
-from biblical_scripts.pipelines.plotting.nodes import plot_sim_null
+from biblical_scripts.pipelines.plotting.nodes import plot_sim_full
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -17,10 +17,10 @@ def create_pipeline(**kwargs):
              outputs="data",
              name="filter_by_author"
             ),
-        node(func=sim_null,
-             inputs=["data", "vocabulary", "params:model", "params:sim_null", "params:known_authors"],
-             outputs="sim_null_res",
-            name="sim_null"
+        node(func=sim_full,
+             inputs=["data", "vocabulary", "params:model", "params:sim_full", "params:known_authors"],
+             outputs="sim_full_res",
+            name="sim_full"
             )
         ]
     )

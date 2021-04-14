@@ -8,7 +8,7 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.similarity.nodes import sim_null
+from biblical_scripts.pipelines.similarity.nodes import sim_full
 
 from dask.distributed import Client, progress
 
@@ -17,14 +17,14 @@ def bs_main(data, params_bs, vocabulary, params_model, params_sim, known_authors
     Run full experiment after sampling original dataset (each row is a feature) with replacements.
     
     Returns:
-    res     :       original sim_null output with additional iteration indicator
+    res     :       original sim_full output with additional iteration indicator
     """
     
     res = pd.DataFrame()
     for itr in range(params_bs['nBS']) :
         data_bs = data.sample(n=len(data), replace=True)
         
-        res1 = sim_null(data_bs, vocabulary, params_model,
+        res1 = sim_full(data_bs, vocabulary, params_model,
         params_sim, known_authors)
         res1['itr_BS'] = itr
         res = res.append(res1, ignore_index=True)
@@ -39,7 +39,7 @@ def bs_main_dist(data, params_bs, vocabulary, params_model, params_sim, known_au
     Run full experiment after sampling original dataset (each row is a feature) with replacements.
     
     Returns:
-    res     :       original sim_null output with additional iteration indicator
+    res     :       original sim_full output with additional iteration indicator
     """
     
     client = Client()
@@ -49,7 +49,7 @@ def bs_main_dist(data, params_bs, vocabulary, params_model, params_sim, known_au
     
     def func(i) :
         data_bs = data.sample(n=len(data), replace=True)
-        res1 = sim_null(data_bs, vocabulary, params_model,
+        res1 = sim_full(data_bs, vocabulary, params_model,
         params_sim, known_authors)
         res1['itr_BS'] = i
         print(i)

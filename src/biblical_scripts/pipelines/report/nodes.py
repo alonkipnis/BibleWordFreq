@@ -28,29 +28,30 @@ def _add_stats_BS(data : pd.DataFrame, value : str, by : List) -> pd.DataFrame :
     res = res.drop(value, axis=1, level=0)
     return res
 
+def add_stats_BS(data : pd.DataFrame) :
+    return _add_stats_BS(data, value='value', by=['doc', 'corpus'])
+
 def _prepare_res(res) :
     """
-    Convert `sim_null' results to standarad similarity results by filtering out
+    Convert `sim_full' results to standarad similarity results by filtering out
     non genuine docs and renaming some columns.
     """
     df = res[res.author == 'doc0'].drop('author', axis=1)
     return df.rename(columns = {'corpus' : 'wrt_author', 'true_author' : 'author'})
 
 
-def report_sim(sim_null_res, vocabulary,
+def report_sim(sim_full_res, vocabulary,
         params_model, params_report) -> pd.DataFrame :
     """
     Report accuracy of min-discrepancy authorship attirbution
     """
-    res = _prepare_res(sim_null_res)
+    res = _prepare_res(sim_full_res)
     res = res[res.author.isin(params_report['known_authors'])]
     df = evaluate_accuracy(res, params_report)
     df = df[df.len >= params_report['min_length_to_report']]
     logging.info(f"Accuracy = {df.succ.mean()}")
     return df
     
-
-
 
 def evaluate_accuracy(df : pd.DataFrame, params_report) -> pd.DataFrame :
     """
@@ -79,7 +80,21 @@ def evaluate_accuracy(df : pd.DataFrame, params_report) -> pd.DataFrame :
     res['param'] = str(params_report)
     return res
 
-def report_sim_BS(sim_null_res, vocabulary,
+
+def report_table(sim_res) :
+    """
+    Output table indicating accuracy of attribution
+    """
+    res0 = sim_res[sim_res.itr == 0]
+    res_tbl = res0.pivot('corpus','doc','value')
+    cmin = res_tbl.idxmin().rename('min_corpus')
+    res_tbl = res_tbl.append(cmin)
+    res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
+    res_tbl.loc['succ', :] = res_tbl.loc['min_corpus',:] == res_tbl.loc['author',:]
+    return res_tbl
+
+
+def report_sim_BS(sim_full_res, vocabulary,
                 params_model, params_report) -> pd.DataFrame :
     """
     Report accuracy of min-discrepancy authorship attirbution
