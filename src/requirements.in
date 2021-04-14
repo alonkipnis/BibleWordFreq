@@ -2,3 +2,5 @@ pandas
 TwoSampleHC
 numpy
 tqdm
+dask
+dask_distributed

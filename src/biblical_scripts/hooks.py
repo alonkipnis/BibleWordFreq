@@ -38,9 +38,13 @@ from kedro.versioning import Journal
 from biblical_scripts.pipelines.OSHB import pipeline as oshb
 from biblical_scripts.pipelines.data_engineering import pipeline as de
 from biblical_scripts.pipelines.data_science import pipeline as ds
-from biblical_scripts.pipelines.data_science1 import pipeline as ds1
 from biblical_scripts.pipelines.data_science_val import pipeline as ds_val
-from biblical_scripts.pipelines.bootstrapping import pipeline as bs
+from biblical_scripts.pipelines.similarity import pipeline as sim
+from biblical_scripts.pipelines.bootstrap import pipeline as bs
+from biblical_scripts.pipelines.plotting import pipeline as plot
+from biblical_scripts.pipelines.plotting_BS import pipeline as plot_BS
+from biblical_scripts.pipelines.report import pipeline as report
+
 
 class ProjectHooks:
     @hook_impl
@@ -53,18 +57,24 @@ class ProjectHooks:
         """
         de_pipeline = de.create_pipeline()
         ds_pipeline = ds.create_pipeline()
-        ds1_pipeline = ds1.create_pipeline()
         ds_val_pipeline = ds_val.create_pipeline()
-        bs_pipeline = bs.create_pipeline()
+        sim_pipeline = sim.create_pipeline()
         oshb_pipeline = oshb.create_pipeline()
+        bs_pipeline = bs.create_pipeline()
+        plot_pipeline = plot.create_pipeline()
+        plot_BS_pipeline = plot_BS.create_pipeline()
+        report_pipeline = report.create_pipeline()
 
         return {
-            "ds" : ds_pipeline,
-            "ds1" : ds1_pipeline,
-            "ds_val" : ds_val_pipeline,
             "oshb" : oshb_pipeline,
             "de" : de_pipeline,
-            "bs" : bs_pipeline,
+            #"ds" : ds_pipeline,
+            #"ds_val" : ds_val_pipeline,
+            "sim" : sim_pipeline,
+            "plot" : plot_pipeline,
+            "sim_bs" : bs_pipeline,
+            "plot_bs" : plot_BS_pipeline,
+            "report" : report_pipeline,
             "__default__" : de_pipeline+ds_val_pipeline}
 
     @hook_impl

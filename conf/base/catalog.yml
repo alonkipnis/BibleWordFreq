@@ -41,11 +41,26 @@ sim_res:
 sim_acc:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/sim_acc.csv
-  versioned: true
+  versioned: false
   
-BS_res:
+sim_null_res:
   type: pandas.CSVDataSet
-  filepath: data/07_sim_output/BS_res.csv
+  filepath: data/07_sim_output/sim_null_res.csv
+  versioned: false
+
+sim_null_res_BS:
+  type: pandas.CSVDataSet
+  filepath: data/07_sim_output/sim_null_res_BS.csv
+  versioned: false
+
+sim_null_res_BS_stats:
+  type: pandas.CSVDataSet
+  filepath: data/07_sim_output/sim_null_res_BS_stats.csv
+  versioned: false
+
+sim_report:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/report.csv
   versioned: false
 
 cross_val:

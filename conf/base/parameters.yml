@@ -30,16 +30,16 @@ model:
   min_cnt: 3
   measures: 
     - 'HC'
-    - 'Fisher'
-    - 'chisq'
+    #- 'Fisher'
+    #- 'chisq'
 
 sim_null:
-  n: 50
+  n: 100
   sampling_method: "doc_id"
   k_docs: 1
   sample_w_replacements: true
   sample_contiguous: false
-  random: true
+  random: false
 
 known_authors:
   - Dtr
@@ -50,5 +50,13 @@ report:
   value: 'HC'
   #value: 'Fisher'
   #value: 'chisq'
-  min_length_to_report: 100 # only include texts of at least min_length words
+  fig_path: 'data/08_reporting/Figs'
+  min_length_to_report: 300 # only include texts of at least min_length words
+  known_authors:
+  - Dtr
+  - DtrH
+  - P
+  
+bootstrapping:
+  nBS: 10
   
