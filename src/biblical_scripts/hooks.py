@@ -75,7 +75,8 @@ class ProjectHooks:
             "sim_bs" : bs_pipeline,
             "plot_bs" : plot_BS_pipeline,
             "report" : report_pipeline,
-            "__default__" : de_pipeline+ds_val_pipeline}
+            "all" : oshb_pipeline+de_pipeline+sim_pipeline+plot_pipeline+report_pipeline,
+            "__default__" :  de_pipeline+sim_pipeline+plot_pipeline+report_pipeline}
 
     @hook_impl
     def register_config_loader(self, conf_paths: Iterable[str]) -> ConfigLoader:
