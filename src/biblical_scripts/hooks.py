@@ -56,7 +56,7 @@ class ProjectHooks:
 
         """
         de_pipeline = de.create_pipeline()
-        ds_pipeline = ds.create_pipeline()
+        sim_only_pipeline = ds.create_pipeline()
         ds_val_pipeline = ds_val.create_pipeline()
         sim_pipeline = sim.create_pipeline()
         oshb_pipeline = oshb.create_pipeline()
@@ -70,7 +70,8 @@ class ProjectHooks:
             "de" : de_pipeline,
             #"ds" : ds_pipeline,
             #"ds_val" : ds_val_pipeline,
-            "sim" : sim_pipeline,
+            "sim_only" : sim_only_pipeline,
+            "sim_full" : sim_pipeline,
             "plot" : plot_pipeline,
             "sim_bs" : bs_pipeline,
             "plot_bs" : plot_BS_pipeline,

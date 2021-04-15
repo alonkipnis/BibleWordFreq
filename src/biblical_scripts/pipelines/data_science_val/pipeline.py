@@ -19,7 +19,7 @@ def create_pipeline(**kwargs):
              outputs="cross_val"
             ),
         node(func=plot_sim,
-             inputs=["cross_val", "params:report", "params:known_authors"],
+             inputs=["cross_val", "params:report"],
              outputs="",
              name="illustrate"
             )

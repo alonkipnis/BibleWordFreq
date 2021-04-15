@@ -58,19 +58,33 @@ def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
         theme(legend_title=element_blank(), legend_position='top'))
     return p
 
-def plot_sim(sim_full_res, params, known_authors) :
+
+def _prepare_res(res) :
+    """
+    Convert `sim_full' results to standarad similarity results by filtering out
+    non genuine docs and renaming some columns.
+    """
+    df = res[res.author == 'doc0'].drop('author', axis=1)
+    return df.rename(columns = {'corpus' : 'wrt_author', 'true_author' : 'author'})
+
+
+def plot_sim(sim_res, params) :
     """
     To do: create a partioned dataset for saving figs to disk
     """
 
+    known_authors = params['known_authors']
     path = params['fig_path']
     value = params['value']
     
-    df = _prepare_res(sim_full_res)
+    df = sim_res.rename(columns = {'true_author' : 'author',
+                                  'doc' : 'doc_id'})
+    # col names compatible with _plot_author_pair
+    df['wrt_author'] = df.loc[:,'variable'].str.extract(r'([^:]+):') 
     
     df = df[df.len >= params['min_length_to_report']]
-    #df['wrt_author'] = df.loc[:,'variable'].str.extract(r'([^:]+):') # get corpus name
-    df_figs = pd.DataFrame()
+    # get corpus name
+    figs = {}
     for auth1 in known_authors :
         for auth2 in known_authors :
             if auth1 < auth2 :
@@ -78,9 +92,9 @@ def plot_sim(sim_full_res, params, known_authors) :
                 df_disp = df[df.author.isin(auth_pair) & df['variable'].str.contains(value)]
                 fn = f'{auth1}_vs_{auth2}.png'
                 p = _plot_author_pair(df_disp, value = 'value', wrt_authors=auth_pair) #+ xlim(0,15) + ylim(0,15)
+                figs[auth_pair] = p
                 p.save(path + '/' + fn)
-                #df_figs = df_figs.append({'authors' : auth_pair, 'fig' : p})
-    return df_figs
+    return figs
 
 
 def _add_prob(res1) :

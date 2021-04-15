@@ -20,10 +20,10 @@ def create_pipeline(**kwargs):
              outputs="sim_full_res_BS",
             name="sim_full"
             ),
-        node(func=add_stats_BS,
-        inputs=["sim_full_res_BS1"],
-        outputs=["sim_full_res_BS_stats"],
-        name="add_stats"
-        )
+            node(func=add_stats_BS,
+            inputs=["sim_full_res_BS1"],
+            outputs=["sim_full_res_BS_stats"],
+            name="add_stats"
+            )
         ]
     )

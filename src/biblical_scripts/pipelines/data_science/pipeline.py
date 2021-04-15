@@ -1,9 +1,11 @@
-#pipeline: data science (select features)
+#pipeline: data science (sim only)
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.data_science.nodes import (build_reduced_vocab, build_model, model_predict, evaluate_accuracy, filter_by_author)
-from biblical_scripts.pipelines.data_engineering.nodes import add_convert
+
+from biblical_scripts.pipelines.data_science.nodes import (build_reduced_vocab, build_model, model_predict, report_table_known, filter_by_author)
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
+from biblical_scripts.pipelines.data_engineering.nodes import add_convert
+
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -13,18 +15,8 @@ def create_pipeline(**kwargs):
              outputs="data",
              name="filter_by_author"
             ),
-        node(func=build_reduced_vocab, 
-             inputs=["data", "vocabulary", "params:model"],
-             outputs="reduced_vocabulary1",
-             name="feature_selection"
-            ),
-        node(func=add_convert,
-             inputs=["reduced_vocabulary1", "oshb_parsed"],
-             outputs="reduced_vocabulary",
-             name="vocab_conversion"
-            ),
         node(func=build_model,
-             inputs=["data","reduced_vocabulary", "params:model"],
+             inputs=["data", "vocabulary", "params:model"],
              outputs="model",
              name="build_model"
             ),
@@ -33,15 +25,15 @@ def create_pipeline(**kwargs):
              outputs="sim_res",
              name="model_predict",
             ),
-        node(func=evaluate_accuracy, 
-             inputs=["sim_res", "params:report", "parameters"],
-             outputs="sim_acc",
-             name="evaluate_accuracy",
+        node(func=report_table_known,
+             inputs=["sim_res", "params:report"],
+             outputs="sim_table_report",
+             name="report_table",
             ),
         node(func=plot_sim,
-             inputs=["sim_res", "params:report", "params:known_authors"],
-             outputs="",
-             name="illustrate"
-            )
+             inputs=["sim_res", "params:report"],
+             outputs=None,
+             name="plot_sim"
+            ),
         ]
     )

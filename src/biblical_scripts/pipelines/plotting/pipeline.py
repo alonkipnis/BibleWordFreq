@@ -7,7 +7,7 @@ def create_pipeline(**kwargs):
     return Pipeline(
         [
         node(func=plot_sim,
-             inputs=["sim_full_res", "params:report", "params:known_authors"],
+             inputs=["sim_full_res", "params:report"],
              outputs=None,
              name="plot_sim"
             ),

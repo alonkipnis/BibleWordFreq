@@ -8,7 +8,10 @@ from biblical_scripts.pipelines.data_science.AuthorshipAttribution.MultiDoc impo
 from typing import Dict, List
 
 
-def build_reduced_vocab(data, vocabulary, model_params) :
+def build_reduced_vocab(data, vocabulary, model_params) -> pd.DataFrame :
+    """
+    Build a model using original vocabulary and apply a feature selection tehcnique 
+    """
     reduction_method = model_params['feat_reduction_method']
     if reduction_method == "none" :
         return vocabulary
@@ -41,6 +44,9 @@ def build_model(data : pd.DataFrame, vocabulary : pd.DataFrame, model_params) ->
     
     TODO: can implement vocab reduction as part of the model
     """
+    
+    
+    vocabulary = build_reduced_vocab(data, vocabulary, model_params)
     
     vocab = vocabulary.feature.astype(str).to_list()
     md = CompareDocs(vocabulary=vocab, **model_params)
@@ -76,14 +82,43 @@ def model_predict(data_test : pd.DataFrame, model) -> pd.DataFrame :
         auth = tested_doc.author.values[0]
         df_rec = model.test_doc(tested_doc, of_cls = auth)
         r = df_rec.iloc[:,df_rec.columns.str.contains(observable)].mean()
-        r['doc_id'] = doc_id
-        r['author'] = auth
+        r['doc'] = doc_id
+        r['true_author'] = auth
         r['len'] = len(tested_doc)
         df_res = df_res.append(r, ignore_index=True)
     
-    df_eval = df_res.melt(['author', 'doc_id', 'len'])
+    df_eval = df_res.melt(['true_author', 'doc', 'len'])
     return df_eval
 
+def _report_table(sim_res) :
+    """
+    Output table indicating accuracy of attribution
+    """
+    res_tbl = sim_res.pivot('corpus','doc','value')
+    lo_corpora = sim_res.corpus.unique().tolist()
+    cmin = res_tbl.idxmin().rename('min_corpus')
+    res_tbl = res_tbl.append(cmin)
+    res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
+    res_tbl.loc['succ', :] = res_tbl.loc['min_corpus',:] == res_tbl.loc['author',:]
+    
+    res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ'],:].mean(1)
+    return res_tbl
+
+
+def report_table_known(df, report_params) :
+    value = report_params['value']
+    known_authors = report_params['known_authors']
+    
+    df1 = df[df['variable'].str.contains(f":{value}")]
+    df1 = df1.reset_index()
+    df1 = df1[df1.len >= report_params['min_length_to_report']]
+    df1 = df1[df1['true_author'].isin(known_authors)]
+    
+    df['corpus'] = df['variable'].str.extract(r'([^:]+):')
+    
+    return _report_table(df)
+    
+    
 def evaluate_accuracy(df : pd.DataFrame, report_params, parameters) -> pd.DataFrame :
     
     def _eval_succ(df) :

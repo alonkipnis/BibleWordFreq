@@ -32,7 +32,7 @@ reduced_vocabulary:
 
 sim_res:
   type: pandas.CSVDataSet
-  filepath: data/06_model_output/sim_res.csv
+  filepath: data/07_sim_output/sim_res.csv
 
 #out_fig:
 #  type: biblical_scripts.extras.datasets.plotnine_fig
@@ -67,6 +67,12 @@ sim_table_report:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/table_report.csv
   versioned: false
+
+sim_table_report_full:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/table_report_full.csv
+  versioned: false
+
 
 cross_val:
   type: pandas.CSVDataSet

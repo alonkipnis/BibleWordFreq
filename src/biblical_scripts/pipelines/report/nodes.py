@@ -80,18 +80,32 @@ def evaluate_accuracy(df : pd.DataFrame, params_report) -> pd.DataFrame :
     res['param'] = str(params_report)
     return res
 
+def report_table_only(sim_res) :
+    """
+    Output table indicating accuracy of attribution
+    """
+    sim_res['variable'] = 'corpus0:HC'
+    res0 = sim_res[sim_res.itr == 0]
+    return _report_table(res0)
 
-def report_table(sim_res) :
+def report_table_full(sim_res) :
     """
     Output table indicating accuracy of attribution
     """
     res0 = sim_res[sim_res.itr == 0]
-    res_tbl = res0.pivot('corpus','doc','value')
+    return _report_table(res0)
+
+def _report_table(sim_res) :
+    """
+    Output table indicating accuracy of attribution
+    """
+    res_tbl = sim_res.pivot('corpus','doc','value')
     cmin = res_tbl.idxmin().rename('min_corpus')
     res_tbl = res_tbl.append(cmin)
     res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
     res_tbl.loc['succ', :] = res_tbl.loc['min_corpus',:] == res_tbl.loc['author',:]
     return res_tbl
+
 
 
 def report_sim_BS(sim_full_res, vocabulary,

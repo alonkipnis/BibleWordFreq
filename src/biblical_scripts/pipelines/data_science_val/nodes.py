@@ -14,8 +14,6 @@ from sklearn.model_selection import KFold
 
 def _val_pipeline(data_train : pd.DataFrame, data_test : pd.DataFrame, 
                  vocabulary, model_params) -> float :
-    vocab = build_reduced_vocab(data_train, vocabulary, 
-                                model_params['feat_reduction_method'], model_params)
     md = build_model(data_train, vocab, model_params)
     labels = data_test[['doc_id', 'author']].drop_duplicates()
     data_test.loc[:,'author'] = 'UNK' # obscure true labels
