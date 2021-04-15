@@ -2,10 +2,9 @@
 
 from kedro.pipeline import node, Pipeline
 
-from biblical_scripts.pipelines.data_science.nodes import (build_reduced_vocab, build_model, model_predict, report_table_known, filter_by_author)
+from biblical_scripts.pipelines.data_science.nodes import (build_model, model_predict, report_table_known, filter_by_author, report_table_unknown)
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
 from biblical_scripts.pipelines.data_engineering.nodes import add_convert
-
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -27,8 +26,13 @@ def create_pipeline(**kwargs):
             ),
         node(func=report_table_known,
              inputs=["sim_res", "params:report"],
-             outputs="sim_table_report",
-             name="report_table",
+             outputs="sim_table_report_known",
+             name="report_table_known",
+            ),
+        node(func=report_table_unknown,
+             inputs=["sim_res", "params:report"],
+             outputs="sim_table_report_unknown",
+             name="report_table_unknown",
             ),
         node(func=plot_sim,
              inputs=["sim_res", "params:report"],

@@ -8,9 +8,9 @@ preprocessing:
   pad: false # add <start>/<end> symbols at the begining/ending of verses
   to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
               # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
-    - Np
-    - Ng
-    - Ac
+     - Np
+     - Ng
+     - Ac
 #  to_replace: # morpholical pad_ledcodes to replace by a symbol
 #    - Ac # cardinal number
 #    - Ng # noun gentilic
@@ -20,18 +20,18 @@ preprocessing:
     #-Pd # preposition definite article
     
 vocab:
-  no_tokens: 3000  # most frequent tokens
+  no_tokens: 400  # most frequent tokens
   by_author: true  # most frequent by each author of the known_authors list
 
 model:
-  feat_reduction_method: "div_persuit" # options are: div_persuit, one_vs_many, none
+  feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
   gamma: .2
   stbl: true
   min_cnt: 3
-  measures: 
+  measures: # list of discrepancy measures available
     - 'HC'
-    #- 'Fisher'
-    #- 'chisq'
+    - 'Fisher'
+    - 'chisq'
 
 sim_full: # these parameters are not in used, only make sure that n is larger than max_no_docs_per_corpus
   n: 100
@@ -47,8 +47,8 @@ known_authors:
   - P
 
 report:
-  value: 'HC'
-  #value: 'Fisher'
+  value: 'HC' 
+  # value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
   min_length_to_report: 300 # only include texts of at least min_length words

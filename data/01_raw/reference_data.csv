@@ -1,0 +1,207 @@
+﻿book,chapter,verses,author
+Deut,6,,Dtr
+Deut,8,,Dtr
+Deut,9,,Dtr
+Deut,10,,Dtr
+Deut,11,,Dtr
+Deut,12,,Dtr
+Deut,13,,Dtr
+Deut,15,,Dtr
+Deut,16,,Dtr
+Deut,18,,Dtr
+Deut,19,,Dtr
+Deut,26,,Dtr
+Deut,28,,Dtr
+Deut,27,,Dtr
+2Sam,7,,DtrH
+Josh,1,,DtrH
+Josh,5,,DtrH
+Josh,6,,DtrH
+Josh,12,,DtrH
+Josh,23,,DtrH
+Judg,2,,DtrH
+Judg,6,,DtrH
+1Kgs,8,,DtrH
+2Kgs,17,1-21;,DtrH
+2Kgs,22,,DtrH
+2Kgs,23,,DtrH
+2Kgs,24,,DtrH
+2Kgs,25,,DtrH
+Gen,17,,P
+Exod,26,,P
+Exod,27,,P
+Exod,28,,P
+Exod,16,,P
+Exod,35,,P
+Exod,36,,P
+Exod,37,,P
+Exod,38,,P
+Exod,39,,P
+Exod,40,,P
+Exod,25,,P
+Exod,29,,P
+Exod,30,,P
+Exod,31,,P
+Exod,6,,P
+Lev,1,,P
+Lev,2,,P
+Lev,3,,P
+Lev,4,,P
+Lev,8,,P
+Lev,9,,P
+Gen,1,1-31;,P
+Gen,2,1-3;,P
+Gen,5,3-28;30-32;,P
+Gen,6,9-22;,P
+Gen,9,1-17;28-29;,P
+Gen,10,2-7;20;22-23;31;,P
+Gen,11,11-26;29-32;,P
+Gen,12,5;,P
+Gen,13,6;12;,P
+Gen,16,3;15-16;,P
+Gen,21,2-5;,P
+Gen,22,20-24;,P
+Gen,23,20-24;,P
+Gen,25,7-10;13-17;20;,P
+Gen,26,20;34-35;,P
+Gen,27,46;,P
+Gen,28,1-9;,P
+Gen,35,9-15;27-29;,P
+Gen,36,40-43;,P
+Gen,37,1;,P
+Gen,46,6-7;,P
+Gen,47,28;,P
+Gen,49,29-33;,P
+Gen,50,12-13;,P
+Exod,1,1-4;7;13-14;,P
+Exod,2,23-25;,P
+Exod,7,1-13;19-22;,P
+Exod,8,1-3;11-15;,P
+Exod,9,8-12;,P
+Exod,11,9-10;,P
+Exod,12,40-42;,P
+Exod,13,20;,P
+Exod,14,1-4;8-10;15-18;21-23;27-29;,P
+Exod,15,22;,P
+Exod,19,1;,P
+Exod,24,16-17;,P
+1Sam,4,,Ark1
+1Sam,5,,Ark1
+1Sam,6,,Ark1
+2Sam,6,,Ark2
+Gen,14,,Late_Abraham
+Gen,15,,Late_Abraham
+Gen,20,,Late_Abraham
+Gen,22,,Late_Abraham
+Gen,24,,Late_Abraham
+Judg,19,,Gibea
+Judg,20,,Gibea
+Judg,21,,Gibea
+Gen,25,24-25;,Early_Jacob
+Gen,28,10-22;,Early_Jacob
+Gen,29,15-30;,Early_Jacob
+Gen,30,25-42;,Early_Jacob
+Gen,31,1-22;46-47;,Early_Jacob
+2Chr,19,,Chr2
+2Chr,20,1-30;,Chr2
+2Chr,29,3-50;,Chr2
+2Chr,30,,Chr2
+2Chr,31,1-21;,Chr2
+2Chr,33,11-17;,Chr2
+2Chr,34,3-7;,Chr2
+2Chr,36,22-23;,Chr2
+1Chr,12,8-15;23-40;,Chr1
+1Chr,22,,Chr1
+1Chr,23,,Chr1
+1Chr,24,,Chr1
+1Chr,25,,Chr1
+1Chr,26,,Chr1
+1Chr,27,,Chr1
+1Chr,28,,Chr1
+1Chr,29,1-21;,Chr1
+Esth,1,,Esth
+Esth,2,,Esth
+Esth,3,,Esth
+Esth,4,,Esth
+Esth,5,,Esth
+Esth,6,,Esth
+Prov,10,,Prov
+Prov,11,,Prov
+Prov,12,,Prov
+Prov,13,,Prov
+Prov,14,,Prov
+Prov,15,,Prov
+Prov,16,,Prov
+Prov,17,,Prov
+Prov,18,,Prov
+Prov,19,,Prov
+Prov,20,,Prov
+Prov,21,,Prov
+Prov,22,,Prov
+Prov,23,,Prov
+Prov,24,,Prov
+Prov,25,,Prov
+Prov,26,,Prov
+Prov,27,,Prov
+Prov,28,,Prov
+Prov,29,,Prov
+Prov,30,,Prov
+Prov,31,,Prov
+Deut,4,,Deut4
+Lev,26,,Lev26
+1Chr,10,,"1, 1 Chron 10"
+1Chr,11,,"2, 1 Chron 11"
+1Chr,13,,"3, 1 Chron 13"
+1Chr,14,,"4, 1 Chron 14"
+1Chr,15,,"5, 1 Chron 15-16"
+1Chr,16,,"5, 1 Chron 15-16"
+1Chr,17,,"6, 1 Chron 17"
+1Chr,18,,"7, 1 Chron 18"
+1Chr,19,,"8, 1 Chron 19"
+1Chr,21,,"9, 1 Chron 21"
+2Chr,2,,"10, 2 Chron 2"
+2Chr,3,,"11, 2 Chron 3"
+2Chr,5,,"12, 2 Chron 5-9"
+2Chr,6,,"12, 2 Chron 5-9"
+2Chr,7,,"12, 2 Chron 5-9"
+2Chr,8,,"12, 2 Chron 5-9"
+2Chr,9,,"12, 2 Chron 5-9"
+2Chr,10,,"13, 2 Chron 10"
+2Chr,12,,"14, 2 Chron 12"
+2Chr,13,,"15, 2 Chron 13"
+2Chr,18,,"16, 2 Chron 18"
+2Chr,21,,"17, 2 Chron 21"
+2Chr,22,,"18, 2 Chron 22"
+2Chr,23,,"19, 2 Chron 23"
+2Chr,27,,"20, 2 Chron 27"
+2Chr,35,,"21, 2 Chron 35"
+1Sam,31,,"1, 1 Sam 31"
+2Sam,5,1-10;,"2, 2 Sam 5:1-10; 23:8-49"
+2Sam,23,8-49;,"2, 2 Sam 5:1-10; 23:8-49"
+2Sam,6,1-11;,"3, 2 Sam 6:1-11"
+2Sam,5,11-25;,"4, 2 Sam 5:11-25"
+2Sam,6,12-23;,"5, 2 Sam 6:12-23"
+2Sam,7,,"6, 2 Sam 7"
+2Sam,8,,"7, 2 Sam 8"
+2Sam,10,,"8, 2 Sam 10"
+2Sam,24,,"9, 2 Sam 24"
+1Kgs,5,,"10, 1 Kings 5"
+1Kgs,6,,"11, 1 Kings 6; 7:15-21"
+1Kgs,7,15-21;,"11, 1 Kings 6; 7:15-21"
+1Kgs,8,,"12, 1 Kings 8-10; 11:41-43"
+1Kgs,9,,"12, 1 Kings 8-10; 11:41-43"
+1Kgs,10,,"12, 1 Kings 8-10; 11:41-43"
+1Kgs,11,41-43;,"12, 1 Kings 8-10; 11:41-43"
+1Kgs,12,1-19;,"13, 1 Kings 12:1-19"
+1Kgs,14,21-31;,"14, 1 Kings 14:21-31"
+1Kgs,15,1-8;,"15, 1 Kings 15:1-8"
+1Kgs,22,1-40;,"16, 1 Kings 22:1-40, 44"
+1Kgs,22,44;,"16, 1 Kings 22:1-40, 44"
+2Kgs,8,16-24;,"17, 2 Kings 8:16-24"
+2Kgs,8,25-29;,"18, 2 Kings 8:25-11:3"
+2Kgs,9,,"18, 2 Kings 8:25-11:3"
+2Kgs,10,,"18, 2 Kings 8:25-11:3"
+2Kgs,11,1-3;,"18, 2 Kings 8:25-11:3"
+2Kgs,11,4-20;,"19, 2 Kings 11:4-20"
+2Kgs,15,32-38;,"20, 2 Kings 15:32-38"
+2Kgs,23,21-30;,"21, 2 Kings 23 :21-30"

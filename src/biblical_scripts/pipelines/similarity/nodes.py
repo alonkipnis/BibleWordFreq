@@ -8,7 +8,7 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.data_science.nodes import (build_reduced_vocab, build_model, model_predict, _prepare_data)
+from biblical_scripts.pipelines.data_science.nodes import (build_model, model_predict, _prepare_data)
 
 def _compare_doc_corpus(ds_doc, ds_corp, vocabulary, params_model) :
     md = build_model(ds_corp, vocabulary, params_model)

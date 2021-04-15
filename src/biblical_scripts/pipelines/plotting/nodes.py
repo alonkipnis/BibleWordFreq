@@ -31,6 +31,7 @@ def _descibe_data(data, filename) :
 def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
 
     df.loc[:,value] = df[value].astype(float)
+    
     df1 = df.filter(['doc_id', 'author', 'wrt_author', value])\
             .pivot_table(index = ['doc_id','author'],
                          columns = 'wrt_author',

@@ -63,16 +63,21 @@ sim_report:
   filepath: data/08_reporting/report.csv
   versioned: false
 
-sim_table_report:
+sim_table_report_known:
   type: pandas.CSVDataSet
-  filepath: data/08_reporting/table_report.csv
+  filepath: data/08_reporting/table_report_known.csv
   versioned: false
+
+sim_table_report_unknown:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/table_report_unk.csv
+  versioned: false
+
 
 sim_table_report_full:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/table_report_full.csv
   versioned: false
-
 
 cross_val:
   type: pandas.CSVDataSet

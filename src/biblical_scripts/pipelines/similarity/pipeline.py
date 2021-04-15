@@ -1,7 +1,7 @@
 #pipeline: bootstrapping
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.data_science.nodes import (build_reduced_vocab, evaluate_accuracy, filter_by_author)
+from biblical_scripts.pipelines.data_science.nodes import (evaluate_accuracy, filter_by_author)
 
 from biblical_scripts.pipelines.data_science_val.nodes import (cross_validation)
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
