@@ -15,7 +15,9 @@ def build_reduced_vocab(data, vocabulary, model_params) -> pd.DataFrame :
     reduction_method = model_params['feat_reduction_method']
     if reduction_method == "none" :
         return vocabulary
+    ##>> HERE
     md = build_model(data, vocabulary, model_params)
+    ## >>>> 
     if reduction_method == "div_persuit" :
         df_res = md.HCT()
         r = df_res[df_res.thresh].reset_index()
@@ -114,9 +116,9 @@ def report_table_known(df, report_params) :
     df1 = df1[df1.len >= report_params['min_length_to_report']]
     df1 = df1[df1['true_author'].isin(known_authors)]
     
-    df['corpus'] = df['variable'].str.extract(r'([^:]+):')
+    df1['corpus'] = df1['variable'].str.extract(r'([^:]+):')
     
-    return _report_table(df)
+    return _report_table(df1)
     
     
 def evaluate_accuracy(df : pd.DataFrame, report_params, parameters) -> pd.DataFrame :
