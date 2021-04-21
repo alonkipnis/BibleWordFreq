@@ -10,43 +10,92 @@ import logging
 from typing import Dict, List
 from biblical_scripts.pipelines.data_science.nodes import (build_model, model_predict, _prepare_data)
 
-def _compare_doc_corpus(ds_doc, ds_corp, vocabulary, params_model) :
-    md = build_model(ds_corp, vocabulary, params_model)
-    res = model_predict(ds_doc, md)
-    return res
-
-def sim_full(data, vocabulary, params_model, params_sim, known_authors) :
+def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame :
     """
-    For each document and each corpus, check the empirical distribution of
-    HC-dist(doc, corpus). Do so by joining the document to the corpus and sample from the joint corpus.
+    Build a model from training data not containing ds['author]=='TEST'
+    and check ds['doc_id']=='TEST' against this model. Return the results of this test
     """
-
-    ds = _prepare_data(data)
     
+    data_train = ds[ds.author != 'TEST']
+    md, _ = build_model(data_train, vocabulary, params_model)
+    
+    data_test = ds[ds.author == 'TEST']
+    return model_predict(data_test, md)
+
+
+def _test_doc(ds, vocabulary, params_model, params_sim, known_authors) :
+    """
+    Test the document marked as 'TEST' 
+    """
+    itr = 0
     res = pd.DataFrame()
     
-    lo_corps = known_authors
-    lo_docs = ds.doc_id.unique()
+    res1 = _check_doc(ds, vocabulary, params_model)  # evaluate wrt to corpus
+    ds_doc = ds[ds.author=='TEST']
+    res1['itr'] = itr
+    res1['smp_len'] = len(ds_doc)
+    res1['kind'] = 'org'
+    res = res.append(res1, ignore_index=True) 
+
+    tested_doc_id = ds_doc.doc_id.values[0]
     
-    similarity_func = {'vocabulary' : vocabulary,
-                'params_model' : params_model}
-    
-    for corp in tqdm(lo_corps) :
-        logging.info(f"Evaluating against {corp}")
-        for doc in lo_docs :
-            logging.info(f"Evaluating {doc}")
-            ds_corp = ds[(ds.author == corp) & (ds.doc_id != doc)]
-            ds_doc = ds[ds.doc_id == doc]
-            #import pdb; pdb.set_trace()
-            res1 = _test_doc_corpus(ds_doc, ds_corp, params_sim, similarity_func)
-            res1['corpus'] = corp
-            res1['doc'] = doc
-            res1['true_author'] = ds_doc['doc_id'].values[0].split('by ')[1]
-            
-            res = res.append(res1, ignore_index=True)
-            
+    for ds1 in _gen_test_doc(ds, known_authors, params_sim) :
+        itr += 1
+        res1 = pd.DataFrame()
+        try :
+            res1 = _check_doc(ds1, vocabulary, params_model)
+            res1 = res1[res1.variable.str.contains('-ext')]
+        except : 
+            import pdb; pdb.set_trace()
+        res1['itr'] = itr
+        res1['smp_len'] = len(ds1[ds1.author=='TEST'])
+        res1['kind'] = 'ext'
+        res = res.append(res1, ignore_index=True) 
     return res
 
+def _gen_test_doc(ds0, known_authors, params) :
+    """
+    document-corpus pair generator
+    
+    Assumes that tested dcoument is marked by 'TEST' as author
+    For each corpus, go over all existing doc_ids. 
+    
+    Future: include more sophisticated sampling methods
+    
+    """
+        
+    ds_doc = ds0[ds0.author == 'TEST']
+    tested_doc_id = ds_doc.doc_id.values[0]
+    
+    for corp in known_authors :
+        ds = ds0.copy()
+        ds.loc[ds.author.isin([corp, 'TEST']), 'author'] = f'{corp}-ext'
+        ds_pool = ds[(ds.author == f'{corp}-ext') & (ds.len >= params['min_length_to_consider'])]
+    
+        smp_pool = ds_pool.doc_id.unique()
+        for smp in smp_pool :
+            ds1 = ds.copy()
+            ds1.loc[ds.doc_id == smp, 'author'] = 'TEST'
+            yield ds1
+
+            
+def sim_full(data, vocabulary, params_model, params_sim, known_authors) :
+    
+    ds = _prepare_data(data)
+    lo_docs = ds.doc_id.unique()
+    
+    res = pd.DataFrame()
+    for doc in tqdm(lo_docs) :
+        logging.info(f"Evaluating {doc}")
+        ds1 = ds[ds.author.isin(known_authors) | (ds.doc_id == doc)]
+        #auth = ds1['author'].values[0]
+        ds1.loc[ds1.doc_id == doc, 'author'] = 'TEST'
+        res1 = _test_doc(ds1, vocabulary, params_model, params_sim, known_authors)
+        res1['doc_tested'] = doc
+        res1['len_doc_tested'] = len(ds1[ds1.author == 'TEST'])
+        res = res.append(res1, ignore_index=True)    
+    return res
+        
 
 def _gen_doc_corpus_pairs(ds, params) :
     """
@@ -95,8 +144,8 @@ def _gen_doc_corpus_pairs(ds, params) :
 
 def _test_doc_corpus(ds_doc, ds_corp, params_sim, similarity_func) :
     """
-    Compute similarity of doc and corpus; simulate many
-    doc-corpus pairs based on params_sim
+    First compute similarity of doc and corpus;
+    then run over  many doc-corpus pairs based on params_sim
     
     Args:
     -----
@@ -142,46 +191,7 @@ def _test_doc_corpus(ds_doc, ds_corp, params_sim, similarity_func) :
     return res
     
     
-def _evaluate_acc(res, nBs) :
-    """
-    Probably evaluates accuracy of method on known results
-    
-    Note: we should not use the method to attribute authorship, only
-    asses the potential of authorship
-    """
-    succ = []
-    for i in tqdm(range(nBS)) :
-        for auth in lo_known_authors :
-            res1 = test_chunck(ds1, author = auth, chunk_size = 50, sampling_method='verse')
-            res1.loc[:,'test_id'] = auth + '-'+ str(i)
-            res1.loc[:,'true_author'] = auth
-            res = res.append(res1, ignore_index=True)
-            succ += [res1.set_index('wrt_author')[value].idxmin() == auth]
-
-    tt = res.groupby('test_id')
-    idx = tt[value].idxmin()
-    acc = np.mean(res.loc[idx].wrt_author == res.loc[idx].true_author)
-    logging.info("Accuracy = ", acc)
-    return acc
-
-
-def test_chunck(ds, author, chunk_size, sampling_method='verse') :
-    ds1 = ds.copy()
-    lo_authors = ds.author.unique()
-    ds1 = ds1.set_index(sampling_method)
-    pool = ds1[ds1.author == author].index.unique()
-
-    k = np.random.randint(1, len(pool)-chunk_size) #sample contigous part
-    # TODO: arrange in the right order (not alphabetically)
-    smp = pool[k:k+chunk_size]
-    ds1.loc[smp,'author'] = '<TEST>'
-    ds1.loc[smp,'doc_id'] = '<TEST>'
-    ds1.author.unique()
-
-    md = AuthorshipAttributionDTM(ds1.reset_index(), min_cnt = MIN_CNT,
-                vocab=most_freq, gamma = GAMMA, verbose = False)
-    #res = md.comp
-
-    res = md.compute_inter_similarity(authors=['<TEST>'], wrt_authors=lo_authors)
-    return res.dropna(axis=1)
-
+def _compare_doc_corpus(ds_doc, ds_corp, vocabulary, params_model) :
+    md = build_model(ds_corp, vocabulary, params_model)
+    res = model_predict(ds_doc, md)
+    return res

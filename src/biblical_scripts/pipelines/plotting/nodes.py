@@ -8,7 +8,7 @@ from typing import Dict, List
 from plotnine import *
 import plotnine
 
-from biblical_scripts.pipelines.report.nodes import _prepare_res
+#from biblical_scripts.pipelines.report.nodes import _prepare_res
 
 plotnine.options.figure_size = (7, 9)
 
@@ -100,9 +100,9 @@ def plot_sim(sim_res, params) :
 
 def _add_prob(res1) :
     """
-    Probability of observing score or more extreme
+    Probability of observing a score or more extreme
     """
-    grp = res1.groupby(['doc','corpus'])
+    grp = res1.groupby(['doc_id','corpus'])
     res1['total'] = grp.variable.transform(pd.Series.count)
     res1['rank'] = pd.Series.round(grp.value.rank()-.5)
     res1['prob'] = 1 - res1['rank'] / res1['total']
@@ -111,10 +111,12 @@ def _add_prob(res1) :
 
 
 def _plot_sim_full_doc(res1) :
+    """
+    To modify
+    """
 
-    res1_full = res1[res1.author == 'doc_smp'] # only artificially gen'd data
-    
-    res1_doc = res1[res1.author == 'doc0'] # actual tested doc
+    res1_full = res1[res1.author == 'ext']  # only artificially gen'd data
+    res1_doc = res1[res1.kind == 'org']     # actual tested doc
 
     p = (ggplot(aes(x='value', fill = 'corpus', y='..density..',
                 color='corpus', label='corpus'), data = res1_full)

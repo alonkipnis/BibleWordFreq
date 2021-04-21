@@ -6,7 +6,7 @@ import numpy as np
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.data_science.nodes import (build_model, evaluate_accuracy, model_predict, _prepare_data)
+from biblical_scripts.pipelines.data_science.nodes import (build_model, model_predict, _prepare_data)
 from sklearn.model_selection import KFold
 
 #import warnings
@@ -14,7 +14,7 @@ from sklearn.model_selection import KFold
 
 def _val_pipeline(data_train : pd.DataFrame, data_test : pd.DataFrame, 
                  vocabulary, model_params) -> float :
-    md = build_model(data_train, vocab, model_params)
+    md, _ = build_model(data_train, vocabulary, model_params)
     labels = data_test[['doc_id', 'author']].drop_duplicates()
     data_test.loc[:,'author'] = 'UNK' # obscure true labels
     df1 = model_predict(data_test, md)
@@ -22,7 +22,7 @@ def _val_pipeline(data_train : pd.DataFrame, data_test : pd.DataFrame,
     #import pdb; pdb.set_trace()
     return df1
 
-def cross_validation(data, vocabulary, model_params, report_params) :
+def cross_validation(data, vocabulary, model_params) :
     """
     Evaluate using cross validation 
     
@@ -47,7 +47,6 @@ def cross_validation(data, vocabulary, model_params, report_params) :
                            vocabulary, model_params)
         res = res.append(rec, ignore_index=True)
         #import pdb; pdb.set_trace()
-    acc = evaluate_accuracy(res, report_params, "cross_validation").succ.mean()
-    logging.info(f"\n\n\tCV acc = {acc}\n\n")
+    
     res['n_fold'] = n_fold
     return res

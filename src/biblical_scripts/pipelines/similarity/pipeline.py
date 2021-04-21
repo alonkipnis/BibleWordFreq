@@ -1,4 +1,4 @@
-#pipeline: bootstrapping
+#pipeline: sim full
 
 from kedro.pipeline import node, Pipeline
 from biblical_scripts.pipelines.data_science.nodes import (evaluate_accuracy, filter_by_author)
@@ -13,7 +13,7 @@ def create_pipeline(**kwargs):
     return Pipeline(
         [
         node(func=filter_by_author, 
-             inputs=["data_proc", "params:known_authors"],
+             inputs=["data_proc", "params:all_authors", "params:unk_authors"],
              outputs="data",
              name="filter_by_author"
             ),

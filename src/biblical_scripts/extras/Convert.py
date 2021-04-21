@@ -35,15 +35,21 @@ class Convert :
            dictionary.get(lemma + ' m',
            dictionary.get('a/'+lemma,
            dictionary.get('b/'+lemma,
+           dictionary.get('b/'+lemma + ' a',
            dictionary.get('c/'+lemma,
+           dictionary.get('c/'+lemma + ' a',
            dictionary.get('c/'+lemma + ' b',
            dictionary.get('d/'+lemma,
+           dictionary.get('d/'+lemma + ' a',
+           dictionary.get('d/'+lemma + ' b',
            dictionary.get('e/'+lemma,
            dictionary.get('k/'+lemma,
            dictionary.get('l/'+lemma,
+           dictionary.get('l/'+lemma + ' a',
+           dictionary.get('l/'+lemma + ' b',
            dictionary.get('m/'+lemma,
            dictionary.get('m/'+lemma,
-                    lemma))))))))))))))))))
+                    lemma))))))))))))))))))))))))
     
     def lem2morph(self, lemma : str) -> str :
         return self._dictionary1[lemma]

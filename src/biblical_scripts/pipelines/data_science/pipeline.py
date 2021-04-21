@@ -10,14 +10,19 @@ def create_pipeline(**kwargs):
     return Pipeline(
         [
         node(func=filter_by_author, 
-             inputs=["data_proc", "params:known_authors"],
-             outputs="data",
+             inputs=["data_proc", "params:known_authors", "params:unk_authors"],
+             outputs="data_filtered",
              name="filter_by_author"
             ),
         node(func=build_model,
-             inputs=["data", "vocabulary", "params:model"],
-             outputs="model",
+             inputs=["data_filtered", "vocabulary", "params:model"],
+             outputs=["model", "reduced_vocabulary0"],
              name="build_model"
+            ),
+        node(func=add_convert,
+             inputs=["reduced_vocabulary0", "oshb_parsed"],
+             outputs="reduced_vocabulary",
+             name="translate_vocab"
             ),
         node(func=model_predict, 
              inputs=["data_proc", "model"],
