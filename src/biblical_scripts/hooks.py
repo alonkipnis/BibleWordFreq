@@ -77,6 +77,7 @@ class ProjectHooks:
             "plot_bs" : plot_BS_pipeline,
             "report" : report_pipeline,
             "all" : oshb_pipeline+de_pipeline+sim_pipeline+plot_pipeline+report_pipeline,
+            "de_sim" : de_pipeline + sim_only_pipeline, 
             "__default__" :  de_pipeline+sim_pipeline+plot_pipeline+report_pipeline}
 
     @hook_impl

@@ -88,7 +88,6 @@ def sim_full(data, vocabulary, params_model, params_sim, known_authors) :
     for doc in tqdm(lo_docs) :
         logging.info(f"Evaluating {doc}")
         ds1 = ds[ds.author.isin(known_authors) | (ds.doc_id == doc)]
-        #auth = ds1['author'].values[0]
         ds1.loc[ds1.doc_id == doc, 'author'] = 'TEST'
         res1 = _test_doc(ds1, vocabulary, params_model, params_sim, known_authors)
         res1['doc_tested'] = doc

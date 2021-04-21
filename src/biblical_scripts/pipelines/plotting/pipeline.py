@@ -1,4 +1,7 @@
 #pipeline: plotting
+# 
+# uses sim_full_res obtained from sim_full pipeline. Function
+# `plot_sim' can also read sim_res
 
 from kedro.pipeline import node, Pipeline
 from biblical_scripts.pipelines.plotting.nodes import (plot_sim, plot_sim_full)

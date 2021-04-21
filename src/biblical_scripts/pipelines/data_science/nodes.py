@@ -9,7 +9,6 @@ from typing import Dict, List
 
 def _build_model(data, vocab, model_params) :
     md = CompareDocs(vocabulary=vocab, **model_params)
-    
     ds = _prepare_data(data)
     train_data = {}
     lo_auth = ds.author.unique()
@@ -44,6 +43,7 @@ def _prepare_data(data) :
     else :
         ds = data.rename(columns = {'chapter' : 'doc_id'}).dropna()
         ds = ds[['author', 'feature', 'token_id', 'doc_id']]
+        ds['doc_tested'] = ds['doc_id']
         ds['doc_id'] += ' by '
         ds['doc_id'] += ds['author'] #sometimes there are multiple authors per chapter
         ds['len'] = ds.groupby('doc_id').feature.transform('count')
@@ -105,6 +105,7 @@ def model_predict(data_test : pd.DataFrame, model) -> pd.DataFrame :
         df_res = df_res.append(r, ignore_index=True)
     
     df_eval = df_res.melt(['author', 'doc_id', 'len'])
+    df_eval['doc_tested'] = df_eval['doc_id'] # for compatibility with sim_full
     return df_eval
 
 def _report_table(sim_res) :
@@ -148,7 +149,6 @@ def report_table_unknown(df, report_params) :
     df1 = df1[~df1['author'].isin(known_authors)] # bc its 'non knonw_authors_only'
     
     return _report_table(df1)
-
 
     
 def evaluate_accuracy(df : pd.DataFrame, report_params, parameters) -> pd.DataFrame :

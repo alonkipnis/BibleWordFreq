@@ -20,7 +20,7 @@ LIST_OF_COLORS = ['tab:red', 'tab:blue','tab:gray', "#00BA38",
     'magenta', '#595959', 'lightseagreen', 'orangered', 'crimson'
 ]
 
-def _descibe_data(data, filename) :
+def _describe_data(data, filename) :
     
     p = (ggplot(aes(x = 'author', fill='author'), data=data ) + geom_bar(stat='count')
     + ylab('# of lemmas') + coord_flip()
@@ -32,12 +32,12 @@ def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
 
     df.loc[:,value] = df[value].astype(float)
     
-    df1 = df.filter(['doc_id', 'author', 'wrt_author', value])\
+    df1 = df.filter(['doc_id', 'author', 'corpus', value])\
             .pivot_table(index = ['doc_id','author'],
-                         columns = 'wrt_author',
+                         columns = 'corpus',
                          values = [value])[value].reset_index()
 
-    lo_authors = pd.unique(df.wrt_author)
+    lo_authors = pd.unique(df.corpus)
     no_authors = len(lo_authors)
 
     if no_authors < 2 :
@@ -59,14 +59,16 @@ def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
         theme(legend_title=element_blank(), legend_position='top'))
     return p
 
-
-def _prepare_res(res) :
+def _arrange_metadata(df, value) :
     """
-    Convert `sim_full' results to standarad similarity results by filtering out
-    non genuine docs and renaming some columns.
+    adds 'corpus' and 'author' column to evaluation results
     """
-    df = res[res.author == 'doc0'].drop('author', axis=1)
-    return df.rename(columns = {'corpus' : 'wrt_author', 'true_author' : 'author'})
+    
+    df = df[df.variable.str.contains(value)]
+    df.loc[:,'corpus'] = df.variable.str.extract(rf"(^[A-Za-z0-9 ]+)(-ext)?:([A-Za-z]+)")[0]
+    df.loc[:,'author'] = df.doc_tested.str.extract(r"by (.+)")[0]
+    df.loc[:,'variable'] = value
+    return df
 
 
 def plot_sim(sim_res, params) :
@@ -78,10 +80,8 @@ def plot_sim(sim_res, params) :
     path = params['fig_path']
     value = params['value']
     
-    df = sim_res.rename(columns = {'true_author' : 'author',
-                                  'doc' : 'doc_id'})
+    df = _arrange_metadata(sim_res, value)
     # col names compatible with _plot_author_pair
-    df['wrt_author'] = df.loc[:,'variable'].str.extract(r'([^:]+):') 
     
     df = df[df.len >= params['min_length_to_report']]
     # get corpus name
@@ -102,7 +102,7 @@ def _add_prob(res1) :
     """
     Probability of observing a score or more extreme
     """
-    grp = res1.groupby(['doc_id','corpus'])
+    grp = res1.groupby(['doc_tested','corpus'])
     res1['total'] = grp.variable.transform(pd.Series.count)
     res1['rank'] = pd.Series.round(grp.value.rank()-.5)
     res1['prob'] = 1 - res1['rank'] / res1['total']
@@ -112,10 +112,10 @@ def _add_prob(res1) :
 
 def _plot_sim_full_doc(res1) :
     """
-    To modify
+    Illustrate the empirical distribution of a document ()
+    
     """
-
-    res1_full = res1[res1.author == 'ext']  # only artificially gen'd data
+    res1_full = res1[res1.kind == 'ext']  # only artificially gen'd data
     res1_doc = res1[res1.kind == 'org']     # actual tested doc
 
     p = (ggplot(aes(x='value', fill = 'corpus', y='..density..',
@@ -132,17 +132,17 @@ def _plot_sim_full_doc(res1) :
     
 def plot_sim_full(sim_full_res, params) :
     path = params['fig_path']
-    
-    res = _add_prob(sim_full_res)
     value = params['value']
+    res = _add_prob(_arrange_metadata(sim_full_res, value))
+
     res = res[res.variable.str.contains(value)]
-    lo_docs = res.doc.unique()
-    res = res[~((res.doc_id == res.doc) & (res.author != 'doc0'))] # include only 
+    lo_docs = res.doc_tested.unique()
+    res = res[~((res.doc_id == res.doc_tested) & (res.kind == 'ext'))] # include only 
     # data obtained from testing doc_nm, but remove the record associated with 
     # doc_nm if one happended to be used in sampling
     
     for doc_nm in lo_docs :
-        p = _plot_sim_full_doc(res[(res.doc == doc_nm)])
+        p = _plot_sim_full_doc(res[(res.doc_tested == doc_nm)])
         p = p + ggtitle(f'{doc_nm}')
         p.save(path + '/' + doc_nm + '.png')
 
@@ -185,13 +185,10 @@ def plot_sim_BS(sim_full_res_BS, params, known_authors) :
     path = params['fig_path']
     value = params['value']
     
-    res = sim_full_res_BS[sim_full_res_BS.len >= params['min_length_to_report']]
-    res = res.rename(columns = {'value_mean' : 'value'})
+    res = _arrange_metadata(sim_full_res_BS)
     
-    df = res[res.author == 'doc0'].drop('author', axis=1)
-    df = df.rename(columns = {'corpus' : 'wrt_author', 'true_author' : 'author'})
+    df = res[res.kind == 'org']
     
-    df['wrt_author'] = df.loc[:,'variable'].str.extract(r'([^:]+):') # get corpus name
     df_figs = pd.DataFrame()
     for auth1 in known_authors :
         for auth2 in known_authors :

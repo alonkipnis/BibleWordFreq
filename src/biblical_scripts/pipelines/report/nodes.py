@@ -103,6 +103,8 @@ def _comp_probs(df : pd.DataFrame, by) -> pd.DataFrame :
 
 def comp_probs(sim_full_res, params_report) :
     df = _arrange_metadata(sim_full_res, params_report['value'])
+    if len(df) == 0 :
+        logging.error("No rows were loaded. Perhaps you did not run sim_full with the new measure?")
     dfm = _comp_probs(df, by=['author', 'doc_tested', 'corpus'])
     return dfm
     
