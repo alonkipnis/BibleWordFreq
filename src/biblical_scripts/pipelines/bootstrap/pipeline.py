@@ -10,7 +10,7 @@ def create_pipeline(**kwargs):
     return Pipeline(
         [
         node(func=filter_by_author, 
-             inputs=["data_proc", "params:known_authors"],
+             inputs=["data_proc", "params:all_authors", "params:unk_authors"],
              outputs="data",
              name="filter_by_author"
             ),
@@ -21,8 +21,8 @@ def create_pipeline(**kwargs):
             name="sim_full"
             ),
             node(func=add_stats_BS,
-            inputs=["sim_full_res_BS1"],
-            outputs=["sim_full_res_BS_stats"],
+            inputs=["sim_full_res_BS", "params:report"],
+            outputs="sim_full_res_BS_stats",
             name="add_stats"
             )
         ]

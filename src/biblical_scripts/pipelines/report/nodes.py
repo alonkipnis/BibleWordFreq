@@ -27,10 +27,12 @@ def _add_stats_BS(data : pd.DataFrame, value : str, by : List) -> pd.DataFrame :
     res[f'{value}_CI05'] = res[(value, '<lambda_0>')]
     res[f'{value}_CI95'] = res[(value, '<lambda_1>')]
     res = res.drop(value, axis=1, level=0)
+    res['nBS'] = (data['itr_BS'].max()+1)
     return res
 
-def add_stats_BS(data : pd.DataFrame) :
-    return _add_stats_BS(data, value='value', by=['doc', 'corpus'])
+def add_stats_BS(data : pd.DataFrame, params) :
+    value = params['value']
+    return _add_stats_BS(_arrange_metadata(data, value), value='value', by=['doc_tested', 'corpus'])
 
 
 def report_sim_full(sim_full_res, params_report) -> pd.DataFrame :

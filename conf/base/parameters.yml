@@ -88,5 +88,5 @@ report:
   - P
   
 bootstrapping:
-  nBS: 10
+  nBS: 1
   
