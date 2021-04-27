@@ -8,11 +8,9 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.similarity.nodes import sim_full
+from biblical_scripts.pipelines.sim_full.nodes import sim_full
 
 from dask.distributed import Client, progress
-
-
 
 
 
@@ -45,12 +43,7 @@ def bs_main_dist(data, params_bs, vocabulary, params_model, params_sim, known_au
     Returns:
     res     :       original sim_full output with additional iteration indicator
     """
-    
-    client = Client()
-    logging.info("********************************************")
-    logging.info("Dask client info: {client}")
-    logging.info("************************************************")
-    
+        
     def func(i) :
         data_bs = data.sample(n=len(data), replace=True)
         res1 = sim_full(data_bs, vocabulary, params_model,
@@ -58,6 +51,12 @@ def bs_main_dist(data, params_bs, vocabulary, params_model, params_sim, known_au
         res1['itr_BS'] = i
         print(i)
         return res1
+    
+    client = Client()
+    logging.info("********************************************")
+    logging.info("Dask client info: {client}")
+    logging.info("************************************************")
+
     
     logging.info("Using Dask...")
     fut = client.map(func, range(params_bs['nBS']))

@@ -1,10 +1,10 @@
 #pipeline: data science val 
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.data_science.nodes import (evaluate_accuracy, filter_by_author, report_table_known, report_table_unknown)
+from biblical_scripts.pipelines.sim.nodes import (evaluate_accuracy, filter_by_author, report_table_known, report_table_unknown)
 
-from biblical_scripts.pipelines.data_science_val.nodes import (cross_validation)
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
+from .nodes import (cross_validation)
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -33,5 +33,5 @@ def create_pipeline(**kwargs):
              outputs="",
              name="illustrate"
             )
-        ]
+        ], tags="similrity: cross validation"
     )

@@ -1,10 +1,10 @@
 #pipeline: bootstrap
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.data_science.nodes import filter_by_author
-from biblical_scripts.pipelines.report.nodes import add_stats_BS
+from biblical_scripts.pipelines.sim.nodes import filter_by_author
+from biblical_scripts.pipelines.reporting.nodes import add_stats_BS
 
-from biblical_scripts.pipelines.bootstrap.nodes import (bs_main, bs_main_dist)
+from .nodes import (bs_main, bs_main_dist)
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -25,5 +25,5 @@ def create_pipeline(**kwargs):
             outputs="sim_full_res_BS_stats",
             name="add_stats"
             )
-        ]
+        ], tags='bootstrap'
     )

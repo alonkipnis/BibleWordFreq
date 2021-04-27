@@ -37,13 +37,13 @@ from kedro.versioning import Journal
 
 from biblical_scripts.pipelines.OSHB import pipeline as oshb
 from biblical_scripts.pipelines.data_engineering import pipeline as de
-from biblical_scripts.pipelines.data_science import pipeline as ds
-from biblical_scripts.pipelines.data_science_val import pipeline as ds_val
-from biblical_scripts.pipelines.similarity import pipeline as sim
+from biblical_scripts.pipelines.sim import pipeline as ds
+from biblical_scripts.pipelines.sim_val import pipeline as ds_val
+from biblical_scripts.pipelines.sim_full import pipeline as sim
 from biblical_scripts.pipelines.bootstrap import pipeline as bs
 from biblical_scripts.pipelines.plotting import pipeline as plot
 from biblical_scripts.pipelines.plotting_BS import pipeline as plot_BS
-from biblical_scripts.pipelines.report import pipeline as report
+from biblical_scripts.pipelines.reporting import pipeline as report
 
 
 class ProjectHooks:

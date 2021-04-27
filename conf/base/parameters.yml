@@ -11,7 +11,7 @@ preprocessing:
      - "FFF"
      - Np
      - Ng
-     - Ac
+#     - Ac
 #  to_replace: # morpholical pad_ledcodes to replace by a symbol
 #    - Ac # cardinal number
 #    - Ng # noun gentilic
@@ -77,8 +77,8 @@ all_authors:
 
 
 report:
-  #value: 'HC' 
-  value: 'Fisher'
+  value: 'HC' 
+  #value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
   min_length_to_report: 300 # only include texts of at least min_length words

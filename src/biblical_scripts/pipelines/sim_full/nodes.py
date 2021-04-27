@@ -8,7 +8,7 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.data_science.nodes import (build_model, model_predict, _prepare_data)
+from biblical_scripts.pipelines.sim.nodes import (build_model, model_predict, _prepare_data)
 
 def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame :
     """

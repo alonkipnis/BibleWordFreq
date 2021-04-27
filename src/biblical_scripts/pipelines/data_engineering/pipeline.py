@@ -1,7 +1,7 @@
 #pipeline: Data Engineering 
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.data_engineering.nodes import (process_data, add_topics, add_convert, build_vocab)
+from .nodes import (process_data, add_topics, add_convert, build_vocab)
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -31,5 +31,5 @@ def create_pipeline(**kwargs):
              outputs="vocabulary",
              name="conversion_vocab"
             ),
-        ]
+        ], tags='data engineering'
     )
