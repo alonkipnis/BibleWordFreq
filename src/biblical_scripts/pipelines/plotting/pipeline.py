@@ -4,7 +4,7 @@
 # `plot_sim' can also read sim_res
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.plotting.nodes import (plot_sim, plot_sim_full)
+from .nodes import (plot_sim, plot_sim_full)
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -19,5 +19,5 @@ def create_pipeline(**kwargs):
              outputs=None,
              name="plot_sim_full"
             )
-        ]
+        ], tags='ploting'
     )

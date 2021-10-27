@@ -6,7 +6,7 @@ import numpy as np
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.data_science.nodes import (build_model, model_predict, _prepare_data)
+from biblical_scripts.pipelines.sim.nodes import (build_model, model_predict, _prepare_data)
 from sklearn.model_selection import KFold
 
 #import warnings

@@ -61,7 +61,7 @@ sim_full_res_BS_stats:
 sim_report:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/report.csv
-  versioned: false
+  versioned: true
 
 sim_table_report_known:
   type: pandas.CSVDataSet

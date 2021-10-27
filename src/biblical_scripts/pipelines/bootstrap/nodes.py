@@ -8,7 +8,7 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.similarity.nodes import sim_full
+from biblical_scripts.pipelines.sim_full.nodes import sim_full
 
 from dask.distributed import Client, progress
 

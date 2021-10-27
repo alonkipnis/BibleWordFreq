@@ -7,7 +7,7 @@ import logging
 import scipy
 
 from typing import Dict, List
-from biblical_scripts.pipelines.data_science.nodes import (_prepare_data)
+from biblical_scripts.pipelines.sim.nodes import (_prepare_data)
 
 #import warnings
 #warnings.filterwarnings("error")
@@ -72,12 +72,17 @@ def evaluate_accuracy(df : pd.DataFrame, params_report) -> pd.DataFrame :
     res = _eval_succ(df.reset_index())
     return res
 
-def _comp_probs(df : pd.DataFrame, by) -> pd.DataFrame :
+def _comp_probs(df : pd.DataFrame, by : List) -> pd.DataFrame :
     """
-    mean, std and CI's over many iterations.
+    Computes mean, std, CI's, rank and t-testing for each document over 
+    each corpus (as set by 'by')
+    
+    Args:
+    df      contains similarity results
+    by      list of columns to index by
     """
     
-    df.loc[:,'rank'] = np.floor(df.groupby(by)['value'].transform('rank'))
+    df.loc[:,'rank'] = df.groupby(by)['value'].transform(pd.Series.rank, method='min')
 
     df0 = df[df.kind == 'org']
     df1 = df[df.kind != 'org']
@@ -90,7 +95,6 @@ def _comp_probs(df : pd.DataFrame, by) -> pd.DataFrame :
                                lambda x : pd.Series.quantile(x, q=.95)
                               ]}, as_index=False).reset_index()\
         .rename(columns = {'<lambda_0>' : 'CI05', '<lambda_1>' : 'CI95'})
-
     dfm = df0.merge(res[['doc_tested', 'corpus', 'value']],
                       on=['doc_tested', 'corpus'], how='right')
 
@@ -99,7 +103,7 @@ def _comp_probs(df : pd.DataFrame, by) -> pd.DataFrame :
     n = dfm[(value, 'count')]
 
     dfm.loc[:,'prob'] = 1 - (np.floor(dfm['rank'])-1) / n
-    dfm.loc[:,'t-score'] = np.abs(dfm[value] - mu) / (std * np.sqrt(n/(n-1)))
+    dfm.loc[:,'t-score'] = dfm[value] - mu / (std * np.sqrt(n/(n-1)))
     dfm.loc[:,'t-test'] = scipy.stats.t.sf(dfm['t-score'], df=n-1)
     return dfm
 
@@ -107,6 +111,7 @@ def comp_probs(sim_full_res, params_report) :
     df = _arrange_metadata(sim_full_res, params_report['value'])
     if len(df) == 0 :
         logging.error("No rows were loaded. Perhaps you did not run sim_full with the new measure?")
+
     dfm = _comp_probs(df, by=['author', 'doc_tested', 'corpus'])
     return dfm
     

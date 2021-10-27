@@ -3,7 +3,7 @@ OSHB Pipeline.
 """
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.OSHB.nodes import read_OSHB
+from .nodes import read_OSHB
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -13,5 +13,5 @@ def create_pipeline(**kwargs):
              outputs='oshb_parsed',
              name="OSHB_reader"
             ),
-        ]
+        ], tags="raw data parser"
     )
