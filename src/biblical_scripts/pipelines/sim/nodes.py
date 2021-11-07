@@ -4,7 +4,7 @@
 import pandas as pd
 import numpy as np
 import logging
-from .AuthorshipAttribution.MultiDoc import CompareDocs
+from biblical_scripts.pipelines.data_science.AuthorshipAttribution.MultiDoc import CompareDocs
 from typing import Dict, List
 
 def _build_model(data, vocab, model_params) :
@@ -20,8 +20,12 @@ def _build_model(data, vocab, model_params) :
 
 def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
     """
-    Build a model using original vocabulary and apply a feature selection tehcnique 
+    Build a model using original vocabulary with 
+    possible reduction of vocabulary elements 
+    based on model_params['feat_reduction_method']
+
     """
+    
     reduction_method = model_params['feat_reduction_method']
     if reduction_method == "none" :
         return vocabulary
@@ -34,7 +38,7 @@ def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
         r = df_res[df_res.thresh].reset_index()
     if reduction_method == "one_vs_many" :
         r = md.HCT_vs_many_filtered().reset_index()
-    logging.info(f"Reduced vocabulary to {len(r.feature)} features")
+    logging.info(f"Reducing vocabulary to {len(r.feature)} features")
     return r
 
 def _prepare_data(data) :
@@ -132,7 +136,7 @@ def report_table_known(df, report_params) :
     df1 = df1[df1.corpus.isin(known_authors)]
     df1 = df1.reset_index()
     df1 = df1[df1.len >= report_params['min_length_to_report']]
-    df1 = df1[df1['author'].isin(known_authors)]  # bc its 'knonw_authors_only'
+    df1 = df1[df1['author'].isin(known_authors)]  # bc its 'known_authors_only'
     
     return _report_table(df1)
 
@@ -146,7 +150,7 @@ def report_table_unknown(df, report_params) :
     df1 = df1[df1.corpus.isin(known_authors)]
     df1 = df1.reset_index()
     df1 = df1[df1.len >= report_params['min_length_to_report']]
-    df1 = df1[~df1['author'].isin(known_authors)] # bc its 'non knonw_authors_only'
+    df1 = df1[~df1['author'].isin(known_authors)] # bc its 'non known_authors_only'
     
     return _report_table(df1)
 

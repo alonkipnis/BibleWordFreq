@@ -31,7 +31,7 @@ def create_pipeline(**kwargs):
         node(func=plot_sim,
              inputs=["sim_res_cv", "params:report"],
              outputs="",
-             name="illustrate"
+             name="plot_sim"
             )
-        ], tags="similrity: cross validation"
+        ], tags="Doc Similarity: cross validation"
     )

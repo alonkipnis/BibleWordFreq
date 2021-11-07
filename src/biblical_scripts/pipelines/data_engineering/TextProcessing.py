@@ -61,6 +61,20 @@ def extract_prefix_suffix(data) :
 
 
 class TextProcessing :
+    """
+        1) removes or replaces specific lemmas based on 
+        morphological codes
+        2) Arranges features as lemma n-grams
+        3) Usually initiallized with certain global 
+        parameters (e.g. conf/base/params.yml)
+
+        Adds brackets around lemmas to indicate special 
+        instruction for counting lemmas in subsequent parts:
+        [lemma] = ignore lemma
+        <lemma> = count lemma as a sub-group based on re
+
+    """
+
     def __init__(self, **kwargs) :
         self.to_remove = kwargs.get('to_remove',[])
         self.to_replace = kwargs.get('to_replace',[])
@@ -72,11 +86,7 @@ class TextProcessing :
         self.pad = kwargs.get('pad', False)  # both sides
         
     def _proc(self, raw_data) :
-        """
-        [lemma] is code for ignore 
-        <lemma> is code for count as a sub-group
 
-        """
 
         # upadate self.list_of_trans
         data = raw_data.copy()
@@ -90,7 +100,8 @@ class TextProcessing :
 
         if self.count_suffix :
             logging.info("Counting suffixes")
-            data['feature'].replace({r"\[(S[dhnp][1-3][bcfm][dps])\]" : r"\1"}, inplace=True, regex=True)
+            data['feature'].replace({r"\[(S[dhnp][1-3][bcfm][dps])\]" : r"\1"},
+                                     inplace=True, regex=True)
 
         data.loc[:,'feature (org)'] = data['feature']
 

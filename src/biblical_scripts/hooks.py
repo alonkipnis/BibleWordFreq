@@ -68,7 +68,6 @@ class ProjectHooks:
         return {
             "oshb" : oshb_pipeline,
             "de" : de_pipeline,
-            #"ds" : ds_pipeline,
             "sim_val" : ds_val_pipeline,
             "sim_only" : sim_only_pipeline,
             "sim_full" : sim_pipeline,

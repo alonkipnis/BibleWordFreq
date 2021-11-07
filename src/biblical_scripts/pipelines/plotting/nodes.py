@@ -61,18 +61,22 @@ def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
 
 def _arrange_metadata(df, value) :
     """
-    adds 'corpus' and 'author' column to evaluation results
+    add 'corpus' and 'author' column to evaluation results
+    by parsing 'variable' and 'doc_id' columns.
     """
     
     df = df[df.variable.str.contains(value)]
     df.loc[:,'corpus'] = df.variable.str.extract(rf"(^[A-Za-z0-9 ]+)(-ext)?:([A-Za-z]+)")[0]
-    df.loc[:,'author'] = df.doc_tested.str.extract(r"by (.+)")[0]
+    df.loc[:,'author'] = df.doc_id.str.extract(r"by (.+)")[0]
     df.loc[:,'variable'] = value
     return df
 
 
 def plot_sim(sim_res, params) :
     """
+    Illustrate discrepancy results
+
+
     To do: create a partioned dataset for saving figs to disk
     """
 
@@ -100,7 +104,9 @@ def plot_sim(sim_res, params) :
 
 def _add_prob(res1) :
     """
+    Rank test: 
     Probability of observing a score or more extreme
+    based on given scores.
     """
     grp = res1.groupby(['doc_tested','corpus'])
     res1['total'] = grp.variable.transform(pd.Series.count)
@@ -160,10 +166,12 @@ def plot_sim_full_BS(sim_full_res_BS, params) :
     """
 
     path = params['fig_path']
+    value = params['value']
     
-    res_BS = res_BS.rename(columns = {'value_mean' : 'value'}) # change things from here on
+    res_BS = sim_full_res_BS.rename(columns = {'value_mean' : 'value'}) # change things from here on
+
+    res = _add_prob(_arrange_metadata(sim_full_res, value))
     
-    res = _add_prob(res_BS)
     value = params['value']
     res = res[res.variable.str.contains(value)]
     lo_docs = res.doc.unique()
@@ -185,7 +193,7 @@ def plot_sim_BS(sim_full_res_BS, params, known_authors) :
     path = params['fig_path']
     value = params['value']
     
-    res = _arrange_metadata(sim_full_res_BS)
+    res = _arrange_metadata(sim_full_res_BS, value)
     
     df = res[res.kind == 'org']
     

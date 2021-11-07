@@ -14,6 +14,11 @@ from sklearn.model_selection import KFold
 
 def _val_pipeline(data_train : pd.DataFrame, data_test : pd.DataFrame, 
                  vocabulary, model_params) -> float :
+    """
+    Validation pipeline: 
+    1. model construction using training data
+    2. prediction of testing data
+    """
     md, _ = build_model(data_train, vocabulary, model_params)
     labels = data_test[['doc_id', 'author']].drop_duplicates()
     data_test.loc[:,'author'] = 'UNK' # obscure true labels
@@ -24,7 +29,11 @@ def _val_pipeline(data_train : pd.DataFrame, data_test : pd.DataFrame,
 
 def cross_validation(data, vocabulary, model_params) :
     """
-    Evaluate using cross validation 
+    Evaluate doc-corpus similarities of docuements of
+    known authorship in a leave-one-out fashion 
+    (i.e., n-fold cross validation where n is the number 
+    of documents)
+    
     
     Args:
     -----
@@ -50,3 +59,36 @@ def cross_validation(data, vocabulary, model_params) :
     
     res['n_fold'] = n_fold
     return res
+
+def bagging(data, vocabulary, model_params, bagging_params) :
+    """
+    # perform bagging several times
+    # each time create a random train test corpora, with proportion 0.75, 0.25
+    # then sample the test 0.8, 0.2, and calculate accuracy score
+
+    Evaluate doc-corpus similarities of docuements of
+    known authorship in a leave-one-out fashion 
+    (i.e., n-fold cross validation where n is the number 
+    of documents)
+    
+    Args:
+    -----
+    data         entire dataset
+    vocabulary   model vocabulary 
+    """
+    lo_authors = data.author.unique().tolist()
+    for itr in range(bagging_params['nBS']) :
+        for grp in data.groupby('author') :
+            # >>>HERE!!
+            # ask Shira why do we need bagging. 
+            # usually bagging is for ensemble methods, but here
+            # it looks like we want to use it to evalaute robustness ?!
+
+            bs_ds_train = grp['doc_id'].sample(frac = .8)
+            bs_ds_test = grp['doc_id'][grp['doc_id'] != bs_ds_train]
+
+            res1 = cross_validation(data_bs, vocabulary, params_model)
+            res1['itr_BS'] = itr
+            res = res.append(res1, ignore_index=True)
+    return res
+
