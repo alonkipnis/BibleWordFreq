@@ -22,6 +22,8 @@ logs/**
 # keep whatever is in 01_raw
 !data/01_raw/*
 
+# ignore Dask folder
+dask*
 
 ##########################
 # Common files
