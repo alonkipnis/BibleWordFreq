@@ -28,7 +28,7 @@ model:
   feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
   gamma: .35  # HC parameter (lower fruction of P-values to consider)
   stbl: true  # type of HC
-  min_cnt: 3  
+  min_cnt: 100  
   measures:   # list of discrepancy measures available
     - 'HC'
     #- 'Fisher'pipeline
@@ -78,7 +78,7 @@ report:
   - P
   
 bootstrapping:
-  nBS: 1
+  nBS: 100
   value: 'HC'
 
 sim_full: # These parameters are not in use, but make

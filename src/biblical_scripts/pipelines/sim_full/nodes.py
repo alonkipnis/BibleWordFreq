@@ -8,7 +8,8 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.sim.nodes import (build_model, model_predict, _prepare_data)
+from biblical_scripts.pipelines.sim.nodes import (build_model,
+                                     model_predict, _prepare_data)
 
 def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame :
     """
@@ -34,33 +35,36 @@ def _test_doc(ds, vocabulary, params_model, params_sim, known_authors) :
     ds_doc = ds[ds.author=='TEST']
     res1['itr'] = itr
     res1['smp_len'] = len(ds_doc)
-    res1['kind'] = 'org'
+    res1['kind'] = 'generic'
     res = res.append(res1, ignore_index=True) 
 
     tested_doc_id = ds_doc.doc_id.values[0]
     
     for ds1 in _gen_test_doc(ds, known_authors, params_sim) :
+        # ds1 is a document from an 'extended' corpus
         itr += 1
         res1 = pd.DataFrame()
-        try :
-            res1 = _check_doc(ds1, vocabulary, params_model)
-            res1 = res1[res1.variable.str.contains('-ext')]
-        except : 
-            import pdb; pdb.set_trace()
+        res1 = _check_doc(ds1, vocabulary, params_model)
+        res1 = res1[res1.variable.str.contains('-ext')]
         res1['itr'] = itr
         res1['smp_len'] = len(ds1[ds1.author=='TEST'])
-        res1['kind'] = 'ext'
+        res1['kind'] = 'extended'
         res = res.append(res1, ignore_index=True) 
     return res
 
 def _gen_test_doc(ds0, known_authors, params) :
     """
-    document-corpus pair generator
+    document-corpus pair generator for assesing probability
+    of doc-corpus scores. We extend each corpus of
+    'known_authors' by adding a tested document (assumed to
+    have 'TEST' as its author). We then 'sample' documents
+    from the extended corpus. 
     
-    Assumes that tested dcoument is marked by 'TEST' as author
-    For each corpus, go over all existing doc_ids. 
     
-    Future: include more sophisticated sampling methods
+    TODO: 
+    At the moment, the generator simply goes over all 
+    documents in the pool. We may want to allow 
+    sampling from the pool instead.
     
     """
         
@@ -69,7 +73,9 @@ def _gen_test_doc(ds0, known_authors, params) :
     
     for corp in known_authors :
         ds = ds0.copy()
+        # mark docs with author corp or TEST
         ds.loc[ds.author.isin([corp, 'TEST']), 'author'] = f'{corp}-ext'
+        # create a pool consisting of marjed docs exceeding minimum length
         ds_pool = ds[(ds.author == f'{corp}-ext') & (ds.len >= params['min_length_to_consider'])]
     
         smp_pool = ds_pool.doc_id.unique()
@@ -82,10 +88,8 @@ def _gen_test_doc(ds0, known_authors, params) :
 def sim_full(data, vocabulary, params_model,
              params_sim, known_authors) :
     """
-    report discrepancy between every document 
-    (of knonw or unknonw authorship) to every 
+    report discrepancy between every document to every 
     corpus of known authorship
-
     """
     
     ds = _prepare_data(data)

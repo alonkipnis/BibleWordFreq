@@ -30,7 +30,8 @@ def bs_main(data, params_bs, vocabulary, params_model, params_sim,
     res     :       original sim_full output with additional iteration 
                     indicator
     """
-    
+    pd.options.mode.chained_assignment = None
+
     res = pd.DataFrame()
     for itr in range(params_bs['nBS']) :
         data_bs = data.sample(n=len(data), replace=True)
@@ -53,7 +54,9 @@ def bs_main_dist(data, params_bs, vocabulary,
     Returns:
     res    :    original sim_full output with additional iteration indicator
     """
-        
+    
+    pd.options.mode.chained_assignment = None
+
     def func(i) :
         data_bs = data.sample(n=len(data), replace=True)
         res1 = sim_full(data_bs, vocabulary, params_model,
@@ -64,7 +67,7 @@ def bs_main_dist(data, params_bs, vocabulary,
     
     client = Client()
     logging.info("********************************************")
-    logging.info("Dask client info: {client}")
+    logging.info(f"Dask client info: {client}")
     logging.info("************************************************")
 
     

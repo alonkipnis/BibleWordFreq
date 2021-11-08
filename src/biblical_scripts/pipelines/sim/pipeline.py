@@ -4,7 +4,12 @@ from kedro.pipeline import node, Pipeline
 
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
 from biblical_scripts.pipelines.data_engineering.nodes import add_convert
-from .nodes import (build_model, model_predict, report_table_known, filter_by_author, report_table_unknown)
+from biblical_scripts.pipelines.reporting.nodes import  (
+     report_table_known, report_table_unknown)
+
+
+from .nodes import (build_model, model_predict, filter_by_author)
+
 
 def create_pipeline(**kwargs):
     return Pipeline(

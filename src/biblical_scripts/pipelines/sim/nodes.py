@@ -4,8 +4,12 @@
 import pandas as pd
 import numpy as np
 import logging
-from biblical_scripts.pipelines.data_science.AuthorshipAttribution.MultiDoc import CompareDocs
+from biblical_scripts.extras.AuthAttrLib.MultiDoc import CompareDocs
 from typing import Dict, List
+
+
+pd.options.mode.chained_assignment = 'raise'
+
 
 def _build_model(data, vocab, model_params) :
     md = CompareDocs(vocabulary=vocab, **model_params)
@@ -16,6 +20,7 @@ def _build_model(data, vocab, model_params) :
         train_data[auth] = ds[ds.author==auth]
     
     md.fit(train_data)
+    import pdb; pdb.set_trace()
     return md
 
 def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
@@ -53,7 +58,8 @@ def _prepare_data(data) :
         ds['len'] = ds.groupby('doc_id').feature.transform('count')
     return ds
 
-def build_model(data : pd.DataFrame, vocabulary : pd.DataFrame, model_params) -> CompareDocs :
+def build_model(data : pd.DataFrame, 
+                vocabulary : pd.DataFrame, model_params) -> CompareDocs :
     """
     Returns a model object
     
@@ -69,15 +75,17 @@ def build_model(data : pd.DataFrame, vocabulary : pd.DataFrame, model_params) ->
     vocab = vocabulary.feature.astype(str).to_list()
     return _build_model(data, vocab, model_params), vocabulary
     
-def filter_by_author(df : pd.DataFrame, lo_authors=[], lo_authors_to_merge=[]) -> pd.DataFrame :
+def filter_by_author(df : pd.DataFrame, lo_authors=[],
+                     lo_authors_to_merge=[]) -> pd.DataFrame :
     """
-    Remove whatever author is not in lo_authors. Overwrite doc_id info
-    for whatever author in lo_authors_to_merge. 
+    Removes whatever author is not in lo_authors. 
+    Overwrite adds doc_id info for whatever author in 
+    lo_authors_to_merge. 
     """
     
     if lo_authors_to_merge :
         idcs = df.author.isin(lo_authors_to_merge)
-        df[idcs]['chapter'] = 'chapter0'
+        df.loc[idcs, 'chapter'] = 'chapter0'
     
     if lo_authors :
         return df[df.author.isin(lo_authors)]
@@ -91,7 +99,8 @@ def model_predict(data_test : pd.DataFrame, model) -> pd.DataFrame :
     model       CompareDocs
     
     Returns:
-    df_res      Each row is the comparison of a doc against a corpus in known_authors
+    df_res      Each row is the comparison of a doc against a corpus in 
+                known_authors
     """
     
     ds = _prepare_data(data_test)
@@ -112,50 +121,9 @@ def model_predict(data_test : pd.DataFrame, model) -> pd.DataFrame :
     df_eval['doc_tested'] = df_eval['doc_id'] # for compatibility with sim_full
     return df_eval
 
-def _report_table(sim_res) :
-    """
-    Output table indicating accuracy of attribution
-    """
     
-    res_tbl = sim_res.pivot('corpus','doc_id','value')
-    lo_corpora = sim_res.corpus.unique().tolist()
-    cmin = res_tbl.idxmin().rename('min_corpus')
-    res_tbl = res_tbl.append(cmin)
-    res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
-    res_tbl.loc['succ', :] = res_tbl.loc['min_corpus',:] == res_tbl.loc['author',:]
-    res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ'],:].mean(1)
-    return res_tbl
-
-
-def report_table_known(df, report_params) :
-    value = report_params['value']
-    known_authors = report_params['known_authors']
-    
-    df1 = df[df['variable'].str.contains(f":{value}")]
-    df1.loc[:,'corpus'] = df1['variable'].str.extract(r'([^:]+):')[0]
-    df1 = df1[df1.corpus.isin(known_authors)]
-    df1 = df1.reset_index()
-    df1 = df1[df1.len >= report_params['min_length_to_report']]
-    df1 = df1[df1['author'].isin(known_authors)]  # bc its 'known_authors_only'
-    
-    return _report_table(df1)
-
-def report_table_unknown(df, report_params) :
-    
-    value = report_params['value']
-    known_authors = report_params['known_authors']
-    
-    df1 = df[df['variable'].str.contains(f":{value}")]
-    df1.loc[:,'corpus'] = df1['variable'].str.extract(r'([^:]+):')[0]
-    df1 = df1[df1.corpus.isin(known_authors)]
-    df1 = df1.reset_index()
-    df1 = df1[df1.len >= report_params['min_length_to_report']]
-    df1 = df1[~df1['author'].isin(known_authors)] # bc its 'non known_authors_only'
-    
-    return _report_table(df1)
-
-    
-def evaluate_accuracy(df : pd.DataFrame, report_params, parameters) -> pd.DataFrame :
+def evaluate_accuracy(df : pd.DataFrame, 
+                      report_params, parameters) -> pd.DataFrame :
     
     def _eval_succ(df) :
         df['wrt_author'] = df['variable'].str.extract(r'([^:]+):')

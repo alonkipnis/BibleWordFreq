@@ -40,7 +40,7 @@ def report_sim_full(sim_full_res, params_report) -> pd.DataFrame :
     Report accuracy of min-discrepancy authorship attirbution of full evaluations
     """
     res = _arrange_metadata(sim_full_res, params_report['value']) # add 'author' and 'corpus' columns
-    res = res[res.kind == 'org'] # only measuerements of original docs 
+    res = res[res.kind == 'generic'] # only measuerements of original docs 
     
     res = res[res.author.isin(params_report['known_authors'])]
     res = res[res.corpus.isin(params_report['known_authors'])]
@@ -74,18 +74,18 @@ def evaluate_accuracy(df : pd.DataFrame, params_report) -> pd.DataFrame :
 
 def _comp_probs(df : pd.DataFrame, by : List) -> pd.DataFrame :
     """
-    Computes mean, std, CI's, rank and t-testing for each document over 
-    each corpus (as set by 'by')
+    Computes mean, std, CI's, rank and t-test for each document over 
+    each corpus (as set by 'by' parameter)
     
     Args:
-    df      contains similarity results
+    df      similarity results
     by      list of columns to index by
     """
     
     df.loc[:,'rank'] = df.groupby(by)['value'].transform(pd.Series.rank, method='min')
 
-    df0 = df[df.kind == 'org']
-    df1 = df[df.kind != 'org']
+    df0 = df[df.kind == 'generic']
+    df1 = df[df.kind != 'generic']
 
     #df1['corpus'] = df1['corpus'].str.extract(r'([A-Za-z0-9 ]+)-ext')[0]
     grp = df1.groupby(by)
@@ -110,18 +110,21 @@ def _comp_probs(df : pd.DataFrame, by : List) -> pd.DataFrame :
 def comp_probs(sim_full_res, params_report) :
     df = _arrange_metadata(sim_full_res, params_report['value'])
     if len(df) == 0 :
-        logging.error("No rows were loaded. Perhaps you did not run sim_full with the new measure?")
+        logging.error("No results were found. Perhaps you did not run"
+                      " sim_full with the requested measure?")
 
     dfm = _comp_probs(df, by=['author', 'doc_tested', 'corpus'])
     return dfm
     
 def report_probs(dfm, params_report) :
     """
-    Arrange dfm as a table 
+    Arrange dfm as an easy-to-read table 
+
     """
     value = params_report['value']
     dfm = dfm.rename(columns = {'value' : value})
-    return dfm.pivot('corpus', 'doc_tested', [value, 'prob', 't-test', 'rank', 't-score'])
+    return dfm.pivot('corpus', 'doc_tested', 
+        [value, 'prob', 't-test', 'rank', 't-score'])
 
 def _arrange_metadata(df, value) :
     """
@@ -134,6 +137,7 @@ def _arrange_metadata(df, value) :
     df.loc[:,'variable'] = value
     return df
 
+
 def report_table(df, report_params) :
     """
     df is the result of 
@@ -145,24 +149,87 @@ def report_table(df, report_params) :
     df1 = df.copy()
     df1 = df1.reset_index()
     df1 = df1[df1.len >= report_params['min_length_to_report']]    
-    #df1['corpus'] = df1['variable'].str.extract(r'([^:]+):')
     
     return _report_table(df1)
+
+
+def _report_table(sim_res) :
+    """
+    Output table indicating accuracy of attribution
+    """
+    
+    res_tbl = sim_res.pivot('corpus','doc_id','value')
+    lo_corpora = sim_res.corpus.unique().tolist()
+    cmin = res_tbl.idxmin().rename('min_corpus')
+    res_tbl = res_tbl.append(cmin)
+    res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
+    res_tbl.loc['succ', :] = res_tbl.loc['min_corpus',:] == res_tbl.loc['author',:]
+    res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ'],:].mean(1)
+    return res_tbl
+
+
+def report_table_known(df, report_params) :
+    """
+    
+    """
+    value = report_params['value']
+    known_authors = report_params['known_authors']
+    
+    df1 = df[df['variable'].str.contains(f":{value}")]
+    df1.loc[:,'corpus'] = df1['variable'].str.extract(r'([^:]+):')[0]
+    df1 = df1[df1.corpus.isin(known_authors)]
+    df1 = df1.reset_index()
+    df1 = df1[df1.len >= report_params['min_length_to_report']]
+    df1 = df1[df1['author'].isin(known_authors)]  # bc its 'known_authors_only'
+    
+    df_res = _report_table(df1)
+    print("\n \t MEAN: ", df_res['mean'],"\n\n")
+    return df_res
+
+def report_table_unknown(df, report_params) :
+    
+    value = report_params['value']
+    known_authors = report_params['known_authors']
+    
+    df1 = df[df['variable'].str.contains(f":{value}")]
+    df1.loc[:,'corpus'] = df1['variable'].str.extract(r'([^:]+):')[0]
+    df1 = df1[df1.corpus.isin(known_authors)]
+    df1 = df1.reset_index()
+    df1 = df1[df1.len >= report_params['min_length_to_report']]
+    df1 = df1[~df1['author'].isin(known_authors)] # bc its 'non known_authors_only'
+    
+    return _report_table(df1)
+
 
 def report_table_full(sim_res_full, params_report) :
     """
     Output table indicating accuracy of attribution
+    for results obtained from pipeline sim_full
     
-    sim_res_full has the 'itr' column
+    Here we need to only need to consider discrepancies
+    wrt to generic corpora
+
+    sim_res_full also has the 'itr' column
     """
-    res0 = sim_res_full[sim_res_full.kind == 'org']
+
+    # these are the discrepancies wrt generic corpora
+    res0 = sim_res_full[sim_res_full.kind == 'generic']
     return report_table(res0, params_report)
 
 def _report_table(df) :
     """
-    Output table indicating accuracy of attribution
+    Output table indicating accuracy of attribution based
+    on discrepancies values
     
+    Args:
+    -----
     df     has columns: 'doc_id', 'author', 'corpus', 'value'
+
+    Returns:
+    -------
+    res_tbl     indicates whether the attribution of each document
+                is correct, as well as the overal accuracy which 
+                is the average of the indicator function of correctness
     """
     
     res_tbl = df.pivot('corpus','doc_id','value')
@@ -176,9 +243,12 @@ def _report_table(df) :
     return res_tbl
 
 
-def report_sim_BS(sim_full_res, vocabulary,
+def report_sim_BS(sim_BS_res, vocabulary,
                 params_model, params_report) -> pd.DataFrame :
     """
     Report accuracy of min-discrepancy authorship attirbution
+
+    To DO:
     """
+
 

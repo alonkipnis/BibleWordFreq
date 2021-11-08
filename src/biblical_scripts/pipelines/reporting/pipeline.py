@@ -1,8 +1,8 @@
 #pipeline: reporting
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.sim_val.nodes import (cross_validation)
-from .nodes import (report_sim_full, report_table_full, comp_probs, report_probs)
+from .nodes import (report_sim_full, report_table_full,
+           comp_probs, report_probs, )
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -18,11 +18,12 @@ def create_pipeline(**kwargs):
         node(func=comp_probs,
              inputs=["sim_full_res", "params:report"],
              outputs="probs",
-             name="report_probs"
+             name="comp_probs"
             ),
         node(func=report_probs,
              inputs=["probs", "params:report"],
              outputs="probs_table",
+             name="report_probs"
             )
         ], tags="reporting"
     )

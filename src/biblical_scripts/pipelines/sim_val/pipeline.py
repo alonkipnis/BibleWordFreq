@@ -1,7 +1,10 @@
 #pipeline: data science val 
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.sim.nodes import (evaluate_accuracy, filter_by_author, report_table_known, report_table_unknown)
+from biblical_scripts.pipelines.sim.nodes import (
+     evaluate_accuracy, filter_by_author)
+from biblical_scripts.pipelines.reporting.nodes import  (
+     report_table_known, report_table_unknown)
 
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
 from .nodes import (cross_validation)

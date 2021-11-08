@@ -6,6 +6,8 @@ from biblical_scripts.pipelines.reporting.nodes import add_stats_BS
 
 from .nodes import (bs_main, bs_main_dist)
 
+
+
 def create_pipeline(**kwargs):
     return Pipeline(
         [
@@ -20,10 +22,10 @@ def create_pipeline(**kwargs):
              outputs="sim_full_res_BS",
             name="sim_full"
             ),
-            node(func=add_stats_BS,
+        node(func=add_stats_BS,
             inputs=["sim_full_res_BS", "params:report"],
             outputs="sim_full_res_BS_stats",
-            name="add_stats"
+            name="add_stats_BS"
             )
         ], tags='bootstrap'
     )

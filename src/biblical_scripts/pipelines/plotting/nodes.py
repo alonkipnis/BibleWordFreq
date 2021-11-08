@@ -30,12 +30,12 @@ def _describe_data(data, filename) :
 
 def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
 
-    df.loc[:,value] = df[value].astype(float)
-    
-    df1 = df.filter(['doc_id', 'author', 'corpus', value])\
+    df1 = df.astype({value : float})\
+            .filter(['doc_id', 'author', 'corpus', value])\
             .pivot_table(index = ['doc_id','author'],
                          columns = 'corpus',
-                         values = [value])[value].reset_index()
+                         values = [value])[value]\
+            .reset_index()
 
     lo_authors = pd.unique(df.corpus)
     no_authors = len(lo_authors)
