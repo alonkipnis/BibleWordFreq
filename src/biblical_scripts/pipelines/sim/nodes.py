@@ -4,11 +4,10 @@
 import pandas as pd
 import numpy as np
 import logging
-from biblical_scripts.extras.AuthAttrLib.MultiDoc import CompareDocs
+from biblical_scripts.extras.AuthAttLib.MultiDoc import CompareDocs
 from typing import Dict, List
 
-
-pd.options.mode.chained_assignment = 'raise'
+pd.options.mode.chained_assignment = None
 
 
 def _build_model(data, vocab, model_params) :
@@ -20,7 +19,6 @@ def _build_model(data, vocab, model_params) :
         train_data[auth] = ds[ds.author==auth]
     
     md.fit(train_data)
-    import pdb; pdb.set_trace()
     return md
 
 def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
@@ -32,6 +30,7 @@ def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
     """
     
     reduction_method = model_params['feat_reduction_method']
+
     if reduction_method == "none" :
         return vocabulary
     
@@ -43,6 +42,7 @@ def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
         r = df_res[df_res.thresh].reset_index()
     if reduction_method == "one_vs_many" :
         r = md.HCT_vs_many_filtered().reset_index()
+
     logging.info(f"Reducing vocabulary to {len(r.feature)} features")
     return r
 
@@ -79,8 +79,10 @@ def filter_by_author(df : pd.DataFrame, lo_authors=[],
                      lo_authors_to_merge=[]) -> pd.DataFrame :
     """
     Removes whatever author is not in lo_authors. 
-    Overwrite adds doc_id info for whatever author in 
-    lo_authors_to_merge. 
+    
+    Adds chapter info for whatever author in 
+    lo_authors_to_merge so that all chapters by these
+    authors are considered as one document
     """
     
     if lo_authors_to_merge :

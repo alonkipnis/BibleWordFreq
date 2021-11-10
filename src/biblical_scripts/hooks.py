@@ -44,6 +44,7 @@ from biblical_scripts.pipelines.bootstrap import pipeline as bs
 from biblical_scripts.pipelines.plotting import pipeline as plot
 from biblical_scripts.pipelines.plotting_BS import pipeline as plot_BS
 from biblical_scripts.pipelines.reporting import pipeline as report
+from biblical_scripts.pipelines.chunk_len import pipeline as chunk_len
 
 
 class ProjectHooks:
@@ -64,6 +65,7 @@ class ProjectHooks:
         plot_pipeline = plot.create_pipeline()
         plot_BS_pipeline = plot_BS.create_pipeline()
         report_pipeline = report.create_pipeline()
+        chunk_len_pipeline = chunk_len.create_pipeline()
 
         return {
             "oshb" : oshb_pipeline,
@@ -75,6 +77,7 @@ class ProjectHooks:
             "sim_bs" : bs_pipeline,
             "plot_bs" : plot_BS_pipeline,
             "report" : report_pipeline,
+            "chunk_len" : chunk_len_pipeline,
             "all" : oshb_pipeline+de_pipeline+sim_pipeline+plot_pipeline+report_pipeline,
             "de_sim" : de_pipeline + sim_only_pipeline, 
             "__default__" :  de_pipeline+sim_pipeline+plot_pipeline+report_pipeline}

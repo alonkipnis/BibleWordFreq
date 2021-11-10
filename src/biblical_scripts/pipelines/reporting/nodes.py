@@ -45,30 +45,35 @@ def report_sim_full(sim_full_res, params_report) -> pd.DataFrame :
     res = res[res.author.isin(params_report['known_authors'])]
     res = res[res.corpus.isin(params_report['known_authors'])]
     
-    df = evaluate_accuracy(res, params_report)
+    df = evaluate_accuracy(res)
     df = df[df.len >= params_report['min_length_to_report']]
     logging.info(f"Accuracy = {df.succ.mean()}")
     return df
     
-def evaluate_accuracy(df : pd.DataFrame, params_report) -> pd.DataFrame :
+
+def _eval_succ(df) :
+    """
+    Indicate whetehr minimal discripancy is obtained by the true author.
+    """
+    idx_min = df.groupby(['doc_id', 'author'])['value'].idxmin()
+    res_min = df.loc[idx_min, :].rename(columns={'corpus' : 'most_sim'})
+    res_min.loc[:, 'succ'] = res_min.author == res_min.most_sim
+    return res_min
+
+
+def evaluate_accuracy(df : pd.DataFrame) -> pd.DataFrame :
     """
     Indicate whetehr minimal discripancy is obtained by the true author.
     
     Args:
     df      data of discripancy results in columns 'value'. Othet columns
             are 'doc_id', 'author', 'corpus'
-    params_report       parameters
     
     Returns:
-    res     one row per doc_id. Indicate whether minimal discripancy is           obtained by the true author.
+    res     one row per doc_id. Indicate whether minimal discripancy is  
+             obtained by the true author.
     """
     
-    def _eval_succ(df) :
-        idx_min = df.groupby(['doc_id', 'author'])['value'].idxmin()
-        res_min = df.loc[idx_min, :].rename(columns={'corpus' : 'most_sim'})
-        res_min.loc[:, 'succ'] = res_min.author == res_min.most_sim
-        return res_min
-
     res = _eval_succ(df.reset_index())
     return res
 
@@ -155,9 +160,9 @@ def report_table(df, report_params) :
 
 def _report_table(sim_res) :
     """
-    Output table indicating accuracy of attribution
+    Arrange discrepancies test results to indicate accuracy of 
+    authorship attribution
     """
-    
     res_tbl = sim_res.pivot('corpus','doc_id','value')
     lo_corpora = sim_res.corpus.unique().tolist()
     cmin = res_tbl.idxmin().rename('min_corpus')
@@ -170,7 +175,8 @@ def _report_table(sim_res) :
 
 def report_table_known(df, report_params) :
     """
-    
+    Arrange discrepancies test results to indicate accuracy of 
+    authorship attribution of known authors
     """
     value = report_params['value']
     known_authors = report_params['known_authors']
@@ -200,13 +206,50 @@ def report_table_unknown(df, report_params) :
     
     return _report_table(df1)
 
+def report_table_len(df, params_report) :
+    """
+    Output table indicating accuracy of attribution
+    for results obtained from pipeline chunk_len
+    
+    Here we need to group by chunk_length and 
+    average over iterations and authors 
+
+    """
+
+
+    value = params_report['value']
+    df1 = df[df['variable'].str.contains(f":{value}")]
+    df1.loc[:,'corpus'] = df1['variable'].str.extract(r'([^:]+):')[0]
+    df1['author'] = df1['true_author']
+    df1['doc_id'] = df1['experiment'] + ":" + df1['true_author'] \
+                + ":" + df1['itr'].astype(str) + ":" + df1['chunk_size'].astype(str)
+    df1 = df1.reset_index()
+    
+    df_res = _eval_succ(df1)
+
+    # average over chunk_len
+    df_res['succ'] = df_res['succ'] + .0
+    grp = df_res.groupby('chunk_size')
+    res = grp.agg({'succ' : ['mean', 'std',
+                               lambda x : pd.Series.quantile(x, q=.05),
+                               lambda x : pd.Series.quantile(x, q=.95)
+                              ]}, as_index=False).reset_index()
+
+    res[f'succ_mean'] = res[('succ', 'mean')]
+    res[f'succ_std'] = res[('succ', 'std')]
+    res[f'succ_CI05'] = res[('succ', '<lambda_0>')]
+    res[f'succ_CI95'] = res[('succ', '<lambda_1>')]
+    res = res.drop('succ', axis=1, level=0)
+
+    return res
+
 
 def report_table_full(sim_res_full, params_report) :
     """
     Output table indicating accuracy of attribution
     for results obtained from pipeline sim_full
     
-    Here we need to only need to consider discrepancies
+    Here we only need to consider discrepancies
     wrt to generic corpora
 
     sim_res_full also has the 'itr' column
@@ -241,14 +284,5 @@ def _report_table(df) :
     
     res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ'],:].mean(1)
     return res_tbl
-
-
-def report_sim_BS(sim_BS_res, vocabulary,
-                params_model, params_report) -> pd.DataFrame :
-    """
-    Report accuracy of min-discrepancy authorship attirbution
-
-    To DO:
-    """
 
 

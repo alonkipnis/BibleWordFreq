@@ -44,18 +44,33 @@ def extract_prefix_suffix(data) :
 
     """
     suff = data[data.morph.str.contains(r'/S[dhnp][1-3][bcfm][dps]')]
-    pref = data[data.morph.str.contains(r'^[HA][A-Z][a-z]?/[^S]')]
 
-    data.loc[:,'feature'] = data.lemma.str.extract(r'(?:^[a-z]/)?([A-Za-z0-9]+)', expand=False)
-    data.loc[:,'morph'] = data.morph.str.extract(r'(?:[HA][A-Z][a-z]?/)?([A-Za-z0-9]+)', expand=False)
+    data['lemma'] = data.lemma.str.extract(r'([\/a-z0-9]+)')
+    data['lemma_split'] = data.lemma.str.split(r"/| ")
+    data_lem_ex = data.explode('lemma_split')
+    pref = data_lem_ex[data_lem_ex.lemma_split.isin(
+        ["a","b","c", "d", "e", "l", "m", "k", "i", "s"])]
+    pref = pref.drop('lemma_split', axis=1)
+
+    #pref = data[data.morph.str.contains(r'^[HA][A-Z][a-z]?/[^S]')]
+
+    data.loc[:,'feature'] = data.lemma.str.extract(
+                                r'(?:^[a-z]/)?([A-Za-z0-9]+)', expand=False)
+    data.loc[:,'morph'] = data.morph.str.extract(
+                        r'(?:[HA][A-Z][a-z]?/)?([A-Za-z0-9]+)', expand=False)
     data.loc[:,'POW'] = 'main'
 
-    suff.loc[:, 'feature'] = '[' + suff.morph.str.extract(r'(S[dhnp][1-3][bcfm][dps])', expand=False) + ']'
-    suff.loc[:, 'morph'] = suff.morph.str.extract(r'(S[dhnp][1-3][bcfm][dps])', expand=False)
+    suff.loc[:, 'feature'] = '[' + suff.morph.str.extract(
+                        r'(S[dhnp][1-3][bcfm][dps])', expand=False) + ']'
+
+    suff.loc[:, 'morph'] = suff.morph.str.extract(r'(S[dhnp][1-3][bcfm][dps])',
+                                                  expand=False)
     suff.loc[:, 'POW'] = 'suffix'
 
-    pref.loc[:, 'feature'] = pref.lemma.str.extract(r'(^[a-z]|l)/?', expand=False)
-    pref.loc[:, 'morph'] = pref.morph.str.extract(r'([HA][A-Z][a-z]?)/', expand=False)
+    pref.loc[:, 'feature'] = pref.lemma.str.extract(r'(^[a-z]|l)/?',
+                                                     expand=False)
+    pref.loc[:, 'morph'] = pref.morph.str.extract(r'([HA][A-Z][a-z]?)/',
+                                                     expand=False)
     pref.loc[:, 'POW'] = 'prefix'
     return pd.concat([pref, data, suff]).sort_values(by="token_id")
 
@@ -87,7 +102,6 @@ class TextProcessing :
         
     def _proc(self, raw_data) :
 
-
         # upadate self.list_of_trans
         data = raw_data.copy()
         data.loc[:, 'feature'] = data['lemma']
@@ -107,13 +121,11 @@ class TextProcessing :
 
         for cd in self.to_remove :
             logging.info(f"Removing {cd}")
-            data.loc[data.morph.str.contains(fr'(?:^|[H/])({cd})'),
-             'feature'] = f"[{cd}]"
+            data.loc[data.morph.str.contains(fr'(?:^|[H/])({cd})'),'feature'] = f"[{cd}]"
 
         for cd in self.to_replace :
             logging.info(f"Replacing {cd}")
-            data.loc[data.morph.str.contains(fr'(?:^|[H/])({cd})'),
-             'feature'] = f"<{cd}>"
+            data.loc[data.morph.str.contains(fr'(?:^|[H/])({cd})'),'feature'] = f"<{cd}>"
 
         data['token_id'] = data.index
 
@@ -125,8 +137,6 @@ class TextProcessing :
     def _proc_ng(self, raw_data) :
         # upadate self.list_of_trans
         data = self._proc(raw_data)
-        #data = data[~data.feature.str.match('^\[.+\]$')] # square brackets
-        # indicate 'ignore'
         data_ng = _extract_ngrams(data, ng_range=self.ng_range, key='feature',
             by=['author', 'chapter', 'verse'], pad=self.pad)
 
@@ -137,9 +147,6 @@ class TextProcessing :
         data_ng['token_id'] = dfmap.token_id
 
         exf = data_ng['feature'].explode()
-        # remove those marked with [ ]
-        #data_ng = data_ng.loc[data_ng.feature.apply(
-        #    lambda x : not (re.search(r"^\[.+\]$",x[0]) or re.search(r"^\[.+\]$",x[1]))),:]
         self._data_ng = data_ng
         return data_ng
     

@@ -58,6 +58,7 @@ def build_vocab(data, params, known_authors) :
     2) 'no_tokens' most frequent by each of the known author
     (option 2 is preffered to avoid biases associated with the
     situation in which more data is avaialble for some authors)
+
     """
 
     n = params['no_tokens']
@@ -69,7 +70,7 @@ def build_vocab(data, params, known_authors) :
         r = _n_most_frequent_by_author(ds, n)
     else :
         r = _n_most_frequent(ds, n)
-    #import pdb; pdb.set_trace()
+
     r = r.drop_duplicates()
     
     logging.info(f"Obtained a vocabulary of {len(r)} features")
@@ -84,6 +85,7 @@ def add_topics(data, topics_data) :
     This block is redundant as we currently do not use
     topic information.
 
+    Issue with verse
     """
     def range_verse(r) :
         if not pd.isna(r) :
@@ -101,7 +103,7 @@ def add_topics(data, topics_data) :
     topic_verse = topics_data.filter(['topic', 'verse']).set_index('verse')
     
     data = data.set_index('verse').join(topic_verse)  #merge into original dataset
-    return data
+    return data.reset_index()
 
 def process_data(data : pd.DataFrame, params) -> pd.DataFrame :
     """
@@ -110,8 +112,6 @@ def process_data(data : pd.DataFrame, params) -> pd.DataFrame :
 
     See module TextProcessing in TextProcessing.py
 
-    Issues:
-    - Words containing 3-parts tokens (xxx/xxx/xxx) may not be processed correctly. 
     """
 
     tp = TextProcessing(**params)
@@ -120,7 +120,8 @@ def process_data(data : pd.DataFrame, params) -> pd.DataFrame :
 
 def add_convert(data : pd.DataFrame, data_org) -> pd.DataFrame :
     """
-    Add a column showing converted features 
+    Add a column translating converted features back to terms as 
+    much as possible
     """
     convert=Convert(data_org)
     try :

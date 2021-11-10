@@ -29,23 +29,25 @@ def _val_pipeline(data_train : pd.DataFrame, data_test : pd.DataFrame,
 
 def cross_validation(data, vocabulary, model_params) :
     """
-    Evaluate doc-corpus similarities of docuements of
-    known authorship in a leave-one-out fashion 
-    (i.e., n-fold cross validation where n is the number 
-    of documents)
-    
+    Evaluate doc-corpus similarities of docuements in a 
+    cross validation setting. If n_fold is not provided 
+    use leave-one-out (n-fold where n is the number of documents) 
     
     Args:
     -----
-    data    entire dataset
-    vocabulary   model vocabulary 
+    data          entire dataset
+    vocabulary    model vocabulary 
+    model_params  instructions for model construction
+    n_fold        number of CV sets (defult = num_of_docs)  
     
     """
     
     ds = _prepare_data(data)
     lo_docs = ds.doc_id.unique()
     n_known = len(lo_docs)
-    n_fold = n_known
+
+    n_fold = model_params.get('n_fold', n_known)  # defult is leave-one-out
+
     kf = KFold(n_splits=n_fold, shuffle=True)
     
     res = pd.DataFrame()

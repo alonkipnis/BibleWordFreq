@@ -1,5 +1,11 @@
 #pipeline: data science val 
 
+"""
+Same as sim_only but allows for custom cross validation procedure, obtained by
+passing `k_fold` in `params:model`
+
+"""
+
 from kedro.pipeline import node, Pipeline
 from biblical_scripts.pipelines.sim.nodes import (
      evaluate_accuracy, filter_by_author)

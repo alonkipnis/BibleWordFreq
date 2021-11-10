@@ -9,16 +9,18 @@ preprocessing:
   to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
              # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
      - "FFF"
-     - Np     # noun proper
-     - Ng     # noun gentile
-     - Ac     # cardinal number
-# to_replace: # morpholical pad_ledcodes to replace by a symbol
-#    - Ac # cardinal number
-#    - Ng # noun gentilic
-#    - Np # name proper
+     #- Np     # noun proper
+     #- Ng     # noun gentile
+     #- Ac     # cardinal number
+  to_replace: # morpholical pad_ledcodes to replace by a symbol
+    - Ac # cardinal number
+    - Ng # noun gentilic
+    - Np # name proper
+    #- Pp # Proposition personal
+    #- Rd # preposition definite article
     # - Nc # noun comon
     # - Vq # verb
-    # - Pd # preposition definite article
+    
     
 vocab:
   no_tokens: 3000  # most frequent tokens
@@ -28,7 +30,8 @@ model:
   feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
   gamma: .35  # HC parameter (lower fruction of P-values to consider)
   stbl: true  # type of HC
-  min_cnt: 100  
+  min_cnt: 1 
+  n_fold: 10
   measures:   # list of discrepancy measures available
     - 'HC'
     #- 'Fisher'pipeline
@@ -66,6 +69,25 @@ all_authors:
   - Prov
   - Lev26
 
+chunk_len_params:
+  sampling_method: "verse"
+  contiguous_chunk: "true"
+  nMonte: 100
+  chunk_lengths:
+    - 5
+    - 10
+    - 15
+    - 20
+    - 25
+    - 30
+    - 40
+    - 50
+    - 60
+    - 70
+    - 80
+    - 90
+    - 100
+
 report:
   value: 'HC' 
   #value: 'Fisher'
@@ -80,6 +102,7 @@ report:
 bootstrapping:
   nBS: 100
   value: 'HC'
+  reduce_feature: None
 
 sim_full: # These parameters are not in use, but make
           # sure that n is larger than max_no_docs_per_corpus. These parameters

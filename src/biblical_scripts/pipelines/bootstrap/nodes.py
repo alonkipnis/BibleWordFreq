@@ -16,11 +16,13 @@ import logging
 
 from typing import Dict, List
 from biblical_scripts.pipelines.sim_full.nodes import sim_full
+from biblical_scripts.pipelines.sim_val.nodes import cross_validation
 
 from dask.distributed import Client, progress
 
 
-def bs_main(data, params_bs, vocabulary, params_model, params_sim,
+
+def bs_main_full(data, params_bs, vocabulary, params_model, params_sim,
          known_authors) :
     """
     Run full experiment after sampling original dataset 
@@ -30,14 +32,30 @@ def bs_main(data, params_bs, vocabulary, params_model, params_sim,
     res     :       original sim_full output with additional iteration 
                     indicator
     """
-    pd.options.mode.chained_assignment = None
 
     res = pd.DataFrame()
     for itr in range(params_bs['nBS']) :
         data_bs = data.sample(n=len(data), replace=True)
-        
         res1 = sim_full(data_bs, vocabulary, params_model,
         params_sim, known_authors)
+        res1['itr_BS'] = itr
+        res = res.append(res1, ignore_index=True)
+    return res
+
+def bs_main_val(data, params_bs, vocabulary, params_model, known_authors) :
+    """
+    Run full experiment after sampling original dataset 
+    (each row is a feature) with replacements.
+    
+    Returns:
+    res     :       original sim_full output with additional iteration 
+                    indicator
+    """
+
+    res = pd.DataFrame()
+    for itr in tqdm(range(params_bs['nBS'])) :
+        data_bs = data.sample(n=len(data), replace=True)
+        res1 = cross_validation(data_bs, vocabulary, params_model)
         res1['itr_BS'] = itr
         res = res.append(res1, ignore_index=True)
     return res
@@ -45,7 +63,7 @@ def bs_main(data, params_bs, vocabulary, params_model, params_sim,
 #import warnings
 #warnings.filterwarnings("error")
 
-def bs_main_dist(data, params_bs, vocabulary,
+def bs_main_full_dist(data, params_bs, vocabulary,
                  params_model, params_sim, known_authors) :
     """
     Run full experiment after sampling original dataset (each row is a feature)
