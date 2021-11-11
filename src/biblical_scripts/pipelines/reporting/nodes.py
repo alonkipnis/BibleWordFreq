@@ -216,7 +216,6 @@ def report_table_len(df, params_report) :
 
     """
 
-
     value = params_report['value']
     df1 = df[df['variable'].str.contains(f":{value}")]
     df1.loc[:,'corpus'] = df1['variable'].str.extract(r'([^:]+):')[0]
@@ -230,34 +229,87 @@ def report_table_len(df, params_report) :
     # average over chunk_len
     df_res['succ'] = df_res['succ'] + .0
     grp = df_res.groupby('chunk_size')
-    res = grp.agg({'succ' : ['mean', 'std',
-                               lambda x : pd.Series.quantile(x, q=.05),
-                               lambda x : pd.Series.quantile(x, q=.95)
-                              ]}, as_index=False).reset_index()
+    res = grp.agg({'succ' : ['mean']}, as_index=False).reset_index()
 
     res[f'succ_mean'] = res[('succ', 'mean')]
-    res[f'succ_std'] = res[('succ', 'std')]
-    res[f'succ_CI05'] = res[('succ', '<lambda_0>')]
-    res[f'succ_CI95'] = res[('succ', '<lambda_1>')]
     res = res.drop('succ', axis=1, level=0)
 
     return res
 
-
-def report_table_full(sim_res_full, params_report) :
+def _pre_report_table_full(df) :
     """
-    Output table indicating accuracy of attribution
-    for results obtained from pipeline sim_full
+    Compute rank-based P-values w.r.t. each 
+    corpus
+
+    """
+
+    lo_docs = df.doc_tested.unique().tolist()
+    res = pd.DataFrame()
+    for doc in lo_docs :
+        df1 = df[df.doc_tested == doc]
+        df1.loc[:, 'rnk'] = df1.groupby('corpus')['value'].rank() 
+        num_of_docs = df1.groupby('corpus')['value'].transform('count')
+        df1.loc[:, 'rnk_pval'] = 1 - df1.loc[:, 'rnk'] / num_of_docs
+        df2 = df1[df1.kind == 'generic']
+        res = res.append(df2, ignore_index=True)
+    return res
+
+
+def report_table_full_known(sim_res_full, params_report, known_authors) :
     
-    Here we only need to consider discrepancies
-    wrt to generic corpora
+    value = params_report['value']
+    res = _arrange_metadata(sim_res_full, value)
+    res = _pre_report_table_full(res)
 
-    sim_res_full also has the 'itr' column
-    """
 
-    # these are the discrepancies wrt generic corpora
-    res0 = sim_res_full[sim_res_full.kind == 'generic']
-    return report_table(res0, params_report)
+    sig_level = params_report['sig_level']
+
+    res_f=res[res.author.isin(known_authors)]
+    lo_authors = res_f.author.unique().tolist()
+    lo_corpora = res_f.corpus.unique().tolist()
+
+    res_tbl = res_f.pivot('corpus', 'doc_id', 'rnk_pval')
+    
+    cmin = res_tbl.idxmax().rename('max_pval_corpus')
+    res_tbl = res_tbl.append(cmin)
+
+    res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
+    res_tbl.loc['succ', :] = res_tbl.loc['max_pval_corpus',:] == res_tbl.loc['author',:]
+
+
+    # add length info
+    #res_tbl = res_tbl.T.merge(res_f[['doc_id', 'len']].drop_duplicates(), on='doc_id').T
+
+    #compute false alarm rate
+    res_tbl.loc['false_alarm', :] = False
+    for auth in lo_authors :
+        idcs = res_tbl.loc['author',:] == auth
+        res_tbl.loc['false_alarm', idcs] = res_tbl.loc[auth, idcs] < sig_level
+
+    # add column indicateing success and false alarm rates
+    res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ', 'false_alarm'],:].mean(1)
+
+    return res_tbl
+
+def report_table_full_unknown(sim_res_full, params_report, unknown_authors) :
+    
+    value = params_report['value']
+    res = _arrange_metadata(sim_res_full, value)
+    res = _pre_report_table_full(res)
+
+    sig_level = params_report['sig_level']
+
+    res_f=res[res.author.isin(unknown_authors)]
+    lo_corpora = res.corpus.unique().tolist()
+
+    res_tbl = res_f.pivot('corpus', 'doc_id', 'rnk_pval')
+    cmin = res_tbl.idxmax().rename('max_pval_corpus')
+    res_tbl = res_tbl.append(cmin)
+
+    res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
+    res_tbl.loc['significane', :] = res_tbl.loc[lo_corpora,:].max() > sig_level
+
+    return res_tbl
 
 def _report_table(df) :
     """

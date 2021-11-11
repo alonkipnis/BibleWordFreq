@@ -77,16 +77,17 @@ def extract_prefix_suffix(data) :
 
 class TextProcessing :
     """
-        1) removes or replaces specific lemmas based on 
-        morphological codes
-        2) Arranges features as lemma n-grams
-        3) Usually initiallized with certain global 
-        parameters (e.g. conf/base/params.yml)
-
-        Adds brackets around lemmas to indicate special 
-        instruction for counting lemmas in subsequent parts:
-        [lemma] = ignore lemma
-        <lemma> = count lemma as a sub-group based on re
+    Preprocess OSHB data:
+        1. Remove or replaces lemmas based on 
+           morphological codes
+        2. Arrange features as lemma n-grams
+        3. Adds brackets around lemmas to indicate special 
+           instruction for counting lemmas in subsequent parts:
+           `[lemma]` :  ignore lemma
+           `<lemma>` :  count lemma as a sub-group based on its
+           morphological code
+        4. Usually initialized with global parameter as in 
+           conf/base/params.yml
 
     """
 

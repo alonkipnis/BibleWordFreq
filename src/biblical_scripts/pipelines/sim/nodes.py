@@ -65,9 +65,9 @@ def build_model(data : pd.DataFrame,
     
     Args:
     -----
-    data    doc_id|author|term
+    data        DataFrame with columns: 'doc_id', 'author', 'term'
+    vocabulary  DataFrame with column 'feature'
     
-    TODO: can implement vocab reduction as part of the model
     """
     
     vocabulary = reduce_vocab(data, vocabulary, model_params)

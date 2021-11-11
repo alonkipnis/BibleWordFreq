@@ -1,19 +1,19 @@
 #pipeline: reporting
 
 from kedro.pipeline import node, Pipeline
-from .nodes import (report_sim_full, report_table_full,
-           comp_probs, report_probs, )
+from .nodes import (report_sim_full, report_table_full_known,
+          report_table_full_unknown, comp_probs, report_probs)
 
 def create_pipeline(**kwargs):
     return Pipeline(
         [
-        node(func=report_sim_full,
-             inputs=["sim_full_res", "params:report"],
-             outputs="sim_full_report"
+        node(func=report_table_full_known,
+             inputs=["sim_full_res", "params:report", "params:known_authors"],
+             outputs="report_table_full_known"
             ),
-        node(func=report_table_full,
-             inputs=["sim_full_res", "params:report"],
-             outputs="sim_table_report"
+        node(func=report_table_full_unknown,
+             inputs=["sim_full_res", "params:report", "params:unk_authors"],
+             outputs="report_table_full_unk"
             ),
         node(func=comp_probs,
              inputs=["sim_full_res", "params:report"],

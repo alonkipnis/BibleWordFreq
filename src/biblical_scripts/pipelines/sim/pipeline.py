@@ -7,9 +7,7 @@ from biblical_scripts.pipelines.data_engineering.nodes import add_convert
 from biblical_scripts.pipelines.reporting.nodes import  (
      report_table_known, report_table_unknown)
 
-
 from .nodes import (build_model, model_predict, filter_by_author)
-
 
 def create_pipeline(**kwargs):
     return Pipeline(
