@@ -21,7 +21,19 @@ belong to the same author. The rank of d(doc, generic corpus) with
 respect to those samples can be used to associate or disassociate doc
 with the author of the generic corpus. This rank can be converted to 
 a P-value under the model that documents are sampled indepdently from 
-a corpus
+a corpus. The functions 
+`report_table_full_known` 
+report_table_full_unknown`
+Report on the P-value from this rank-based test, indicate the corpus
+attaining maximal P-value (maximum likelihood under the null), and
+indicate whether we cannot reject the null hypothesis at level .05
+
+Another way to obtain probabilities and P-values is to 
+suppose that HC discrepancies between documents and corporas follow
+a normal distribution, so that we are looking at a t-test of the HC
+scores with mean and std obtained by the sample mean and std, respectively. 
+The functions `comp_probs` computes these probabilities, while the function
+`report_probs` output these probabilities in a table that is readable. 
 
 """
 
@@ -30,7 +42,8 @@ from biblical_scripts.pipelines.sim.nodes import (evaluate_accuracy,
     filter_by_author)
 
 from biblical_scripts.pipelines.reporting.nodes import (
-    report_table_full_known, report_table_full_unknown)
+    report_table_full_known, report_table_full_unknown,
+    comp_probs, report_probs)
 
 from .nodes import sim_full
 
@@ -57,6 +70,16 @@ def create_pipeline(**kwargs):
             inputs=['sim_full_res', 'params:report', 'params:unk_authors'],
             outputs="sim_full_table_report_unknown",
             name="report_table_full_unknown"
+            ),
+        node(func=comp_probs,
+             inputs=["sim_full_res", "params:report"],
+             outputs="probs",
+             name="comp_probs"
+            ),
+        node(func=report_probs,
+             inputs=["probs", "params:report"],
+             outputs="probs_table",
+             name="report_probs"
             )
         ], tags='minimal rank discrepancy'
     )

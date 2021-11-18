@@ -87,7 +87,8 @@ def _comp_probs(df : pd.DataFrame, by : List) -> pd.DataFrame :
     by      list of columns to index by
     """
     
-    df.loc[:,'rank'] = df.groupby(by)['value'].transform(pd.Series.rank, method='min')
+    df.loc[:,'rank'] = df.groupby(by)['value'].transform(
+                                     pd.Series.rank, pct=True, method='min')
 
     df0 = df[df.kind == 'generic']
     df1 = df[df.kind != 'generic']
@@ -107,12 +108,17 @@ def _comp_probs(df : pd.DataFrame, by : List) -> pd.DataFrame :
     std = dfm[(value ,'std')]
     n = dfm[(value, 'count')]
 
-    dfm.loc[:,'prob'] = 1 - (np.floor(dfm['rank'])-1) / n
+    #dfm.loc[:,'prob'] = 1 - (np.floor(dfm['rank'])-1) / n
+    dfm.loc[:,'rank_pval'] = 1 - dfm['rank']
     dfm.loc[:,'t-score'] = dfm[value] - mu / (std * np.sqrt(n/(n-1)))
     dfm.loc[:,'t-test'] = scipy.stats.t.sf(dfm['t-score'], df=n-1)
     return dfm
 
 def comp_probs(sim_full_res, params_report) :
+    """
+    Rank-based test and t-test for discrepancy results obtained by 
+    augmanting each corpus with the tested document
+    """
     df = _arrange_metadata(sim_full_res, params_report['value'])
     if len(df) == 0 :
         logging.error("No results were found. Perhaps you did not run"
@@ -129,7 +135,7 @@ def report_probs(dfm, params_report) :
     value = params_report['value']
     dfm = dfm.rename(columns = {'value' : value})
     return dfm.pivot('corpus', 'doc_tested', 
-        [value, 'prob', 't-test', 'rank', 't-score'])
+        [value, 'rank_pval', 't-test', 't-score']).reset_index()
 
 def _arrange_metadata(df, value) :
     """
@@ -170,14 +176,32 @@ def _report_table(sim_res) :
     res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
     res_tbl.loc['succ', :] = res_tbl.loc['min_corpus',:] == res_tbl.loc['author',:]
     res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ'],:].mean(1)
-    return res_tbl
+    print(res_table.loc['succ', :])
+    return res_tbl.reset_index()
 
 
-def report_table_known(df, report_params) :
+def report_table_known(df, report_params, chapters_to_report=pd.DataFrame()) :
     """
     Arrange discrepancies test results to indicate accuracy of 
     authorship attribution of known authors
+
+    Args:
+    -----
+    df                  discrepancies of many (doc, cropus) pairs
+    report_params       parameters indicating how to report 
+    chapters_to_report   only report on chapters in this list
     """
+
+    if not chapters_to_report.empty :
+        chapters_to_report.loc[:,'feature'] = 'null'
+        chapters_to_report.loc[:,'chapter'] = chapters_to_report['book'] \
+                            + '.' + chapters_to_report['chapter'].astype(str)
+        lo_chapters = _prepare_data(
+            chapters_to_report[['chapter', 'author', 'feature']]
+                                    ).doc_id.tolist()
+        print(f"Reporting on the reduced list of {len(lo_chapters)} chapters")
+        df = df[df.doc_id.isin(lo_chapters)]
+
     value = report_params['value']
     known_authors = report_params['known_authors']
     
@@ -189,8 +213,8 @@ def report_table_known(df, report_params) :
     df1 = df1[df1['author'].isin(known_authors)]  # bc its 'known_authors_only'
     
     df_res = _report_table(df1)
-    print("\n \t MEAN: ", df_res['mean'],"\n\n")
-    return df_res
+    print("\n \t MEAN: ", df_res['mean'], "\n\n")
+    return df_res.reset_index()
 
 def report_table_unknown(df, report_params) :
     
@@ -247,9 +271,10 @@ def _pre_report_table_full(df) :
     res = pd.DataFrame()
     for doc in lo_docs :
         df1 = df[df.doc_tested == doc]
-        df1.loc[:, 'rnk'] = df1.groupby('corpus')['value'].rank() 
+        df1.loc[:, 'rnk'] = df1.groupby('corpus')['value'].rank(pct=True,
+                                                                  method='min') 
         num_of_docs = df1.groupby('corpus')['value'].transform('count')
-        df1.loc[:, 'rnk_pval'] = 1 - df1.loc[:, 'rnk'] / num_of_docs
+        df1.loc[:, 'rnk_pval'] = 1 - df1.loc[:, 'rnk']
         df2 = df1[df1.kind == 'generic']
         res = res.append(df2, ignore_index=True)
     return res
@@ -289,7 +314,7 @@ def report_table_full_known(sim_res_full, params_report, known_authors) :
     # add column indicateing success and false alarm rates
     res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ', 'false_alarm'],:].mean(1)
 
-    return res_tbl
+    return res_tbl.reset_index()
 
 def report_table_full_unknown(sim_res_full, params_report, unknown_authors) :
     
@@ -309,7 +334,7 @@ def report_table_full_unknown(sim_res_full, params_report, unknown_authors) :
     res_tbl.loc['author', :] = [r[1] for r in res_tbl.columns.str.split(' by ')]
     res_tbl.loc['significane', :] = res_tbl.loc[lo_corpora,:].max() > sig_level
 
-    return res_tbl
+    return res_tbl.reset_index()
 
 def _report_table(df) :
     """

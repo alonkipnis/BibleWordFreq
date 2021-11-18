@@ -33,7 +33,7 @@ def create_pipeline(**kwargs):
              name="model_predict",
             ),
         node(func=report_table_known,
-             inputs=["sim_res", "params:report"],
+             inputs=["sim_res", "params:report", "chapters_to_report"],
              outputs="sim_table_report_known",
              name="report_table_known",
             ),

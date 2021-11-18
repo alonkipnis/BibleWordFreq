@@ -13,6 +13,10 @@ oshb_parsed:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/oshd_parsed.csv
     
+chapters_to_report:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/to_report.csv
+
 topics_data:
   type: pandas.CSVDataSet
   filepath: data/01_raw/reference_data_topics.csv
@@ -20,7 +24,6 @@ topics_data:
 data_proc:
   type: pandas.CSVDataSet
   filepath: data/04_feature/data_proc.csv
-  versioned: false
 
 vocabulary:
   type: pandas.CSVDataSet

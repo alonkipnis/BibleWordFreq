@@ -47,14 +47,18 @@ def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
     return r
 
 def _prepare_data(data) :
+    """
+    Arrange data in a way suitable for inference
+    """
     if 'doc_id' in data.columns :
         return data
     else :
         ds = data.rename(columns = {'chapter' : 'doc_id'}).dropna()
-        ds = ds[['author', 'feature', 'token_id', 'doc_id']]
+        ds = ds.filter(['author', 'feature', 'token_id', 'doc_id'])
         ds['doc_tested'] = ds['doc_id']
-        ds['doc_id'] += ' by '
-        ds['doc_id'] += ds['author'] #sometimes there are multiple authors per chapter
+        ds['doc_id'] = ds['doc_id'].astype(str) + ' by ' + ds['author'] # sometimes there are 
+                                                            # multiple authors per 
+                                                            # chapter
         ds['len'] = ds.groupby('doc_id').feature.transform('count')
     return ds
 

@@ -1,10 +1,9 @@
 preprocessing:
   extract_prefix: true # split lemmas by prefix and suffix
-  extract_suffix: false # REDUNDENT
-  morph_code_only: true 
+  morph_code_only: false 
   flat_suff_person: true  # remove person-form indicator, or not
-  ng_min: 1  # min_ngram
-  ng_max: 1  # max_ngram (must be larger than ng_min)
+  ng_min: 2  # min_ngram
+  ng_max: 2  # max_ngram (must be larger than ng_min)
   pad: false # add <start>/<end> symbols at the begining/ending of verses
   to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
              # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
@@ -14,7 +13,7 @@ preprocessing:
     #- Ac     # cardinal number
   to_replace: # morpholical pad_ledcodes to replace by a symbol
     - "FFF"
-    - Ac # cardinal number
+    #- Ac # cardinal number
     - Ng # noun gentilic
     - Np # name proper
     #- Pp # Proposition personal
@@ -27,14 +26,13 @@ vocab:
   by_author: true  # most frequent by each author of the known_authors list
 
 model:
-  feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
+  feat_reduction_method: "one_vs_many" # options are: div_persuit, one_vs_many, none
   gamma: .35  # HC parameter (lower fruction of P-values to consider)
   stbl: true  # type of HC
-  min_cnt: 1
-  #n_fold: 10
+  min_cnt: 3
   measures:   # list of discrepancy measures available
     - 'HC'
-    #- 'Fisher' # Fisher's combination test
+    - 'Fisher' # Fisher's combination test
     #- 'chisq' # chisquared test
 
 known_authors:
@@ -74,7 +72,7 @@ report:
   #value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
-  min_length_to_report: 200 # only include texts of at least min_length words
+  min_length_to_report: 400 # only include texts of at least min_length words
   sig_level: .05            # significance level for rank-based testing
   known_authors:
   - Dtr
@@ -101,7 +99,7 @@ sim_full: # Make sure that n is larger than max_no_docs_per_corpus.
 
 chunk_len_params:
   sampling_method: "verse"
-  contiguous_chunk: "false"
+  contiguous_chunk: "true"
   nMonte: 500
   chunk_lengths:
     - 5

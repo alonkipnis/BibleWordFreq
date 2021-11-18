@@ -29,7 +29,7 @@ def _describe_data(data, filename) :
 
 
 def _plot_author_pair(df, value, wrt_authors = [], show_legend=True):
-
+    assert(len(df) > 0)
     df1 = df.astype({value : float})\
             .filter(['doc_id', 'author', 'corpus', value])\
             .pivot_table(index = ['doc_id','author'],
