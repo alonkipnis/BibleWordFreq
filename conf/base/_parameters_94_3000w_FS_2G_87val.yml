@@ -1,13 +1,14 @@
-# This configuration resulted in 92% accuracy
+# This configuration resulted in 94% accuracy
+# it uses HC feature selection and bigrams
 
 preprocessing:
   extract_prefix: true # split lemmas by prefix and suffix
-  morph_code_only: false
+  morph_code_only: false 
   flat_suff_person: true  # remove person-form indicator, or not
-  ng_min: 1  # min_ngram
-  ng_max: 1  # max_ngram (must be larger than ng_min)
+  ng_min: 2  # min_ngram
+  ng_max: 2  # max_ngram (must be larger than ng_min)
   pad: false # add <start>/<end> symbols at the begining/ending of verses
-  to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun),
+  to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun), 
              # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
     - "FFF"  # that's a placeholder
     #- Np     # noun proper
@@ -20,21 +21,21 @@ preprocessing:
     - Np # name proper
     #- Pp # Proposition personal
     #- Rd # preposition definite article
-    # - Nc # noun comon
+    #- Nc # noun comon
     #- Vq # verb
-
+    
 vocab:
   no_tokens: 3000  # most frequent tokens
   by_author: true  # most frequent by each author of the known_authors list
 
 model:
-  feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
+  feat_reduction_method: "one_vs_many" # options are: div_persuit, one_vs_many, none
   gamma: .25  # HC parameter (lower fruction of P-values to consider)
   stbl: true  # type of HC
-  min_cnt: 1
+  min_cnt: 3
   measures:   # list of discrepancy measures available
     - 'HC'
-    #- 'Fisher' # Fisher's combination test
+    - 'Fisher' # Fisher's combination test
     #- 'chisq' # chisquared test
 
 known_authors:
@@ -74,22 +75,22 @@ report:
   #value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
-  min_length_to_report: 500 # only include texts of at least min_length words
+  min_length_to_report: 300 # only include texts of at least min_length words
   sig_level: .05            # significance level for rank-based testing
   known_authors:
   - Dtr
   - DtrH
   - P
-
+  
 bootstrapping:
   nBS: 100
   value: 'HC'
   reduce_feature: None
 
-sim_full: # Make sure that n is larger than max_no_docs_per_corpus.
+sim_full: # Make sure that n is larger than max_no_docs_per_corpus. 
           # These parameters are
           # required to simulate a different null distribution, e.g.,
-          # by sampling
+          # by sampling 
           # text chunks from a contiguous piece of text
   n: 200
   min_length_to_consider: 100

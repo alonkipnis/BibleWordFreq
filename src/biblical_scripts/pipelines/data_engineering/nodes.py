@@ -1,55 +1,58 @@
 # pipeline: data engineering
 """
-This pipeline takes raw 
+This pipeline takes raw OSHB data (one token per row) and
+applies several transformations based on 'preprocessing'
+parameter in `parameters.yml`
 
 """
 
 import pandas as pd
-import numpy as np
-import re
-from nltk import everygrams
 import logging
 
 from biblical_scripts.pipelines.data_engineering.TextProcessing import TextProcessing
 from biblical_scripts.extras.Convert import Convert
 
-def _get_topics(topics_data) :
-        """ Read topic from an external list and add as 
-        a seperate field. 
+
+def _get_topics(topics_data):
+    """ Read topic from an external list and add as
+        a separate field.
         """
 
-        def range_verse(r) :
-            ls = r.split('-')
-            return list(range(int(ls[0]), int(ls[1])+1))
+    def range_verse(r):
+        ls = r.split('-')
+        return list(range(int(ls[0]), int(ls[1]) + 1))
 
-        topics_data.loc[:, 'num'] = topics_data.verses.transform(range_verse)
-        topics_data = topics_data.explode('num')
+    topics_data.loc[:, 'num'] = topics_data.verses.transform(range_verse)
+    topics_data = topics_data.explode('num')
 
-        # rename 'verse' with book and chapter info
-        topics_data.loc[:,'verse'] = topics_data.book.astype(str) + "." + topics_data.chapter.astype(str)\
-         + '.' + topics_data.num.astype(str)
+    # rename 'verse' with book and chapter info
+    topics_data.loc[:, 'verse'] = topics_data.book.astype(str) + "." + topics_data.chapter.astype(str) \
+                                  + '.' + topics_data.num.astype(str)
 
-        #get topic by verse
-        topic_verse = topics_data.filter(['topic', 'verse']).set_index('verse')
-        
-        return topic_verse
-    
-def _n_most_frequent_by_author(ds, n) :
-    return ds.groupby(['author', 'feature'])\
-            .count()\
-            .sort_values(by='chapter', ascending=False)\
-            .reset_index()\
-            .groupby(['author'])\
-            .head(n).filter(['feature'])
+    # get topic by verse
+    topic_verse = topics_data.filter(['topic', 'verse']).set_index('verse')
 
-def _n_most_frequent(ds, n) :
-    return ds.groupby(['feature'])\
-            .count()\
-            .sort_values(by='chapter', ascending=False)\
-            .reset_index()\
-            .head(n).filter(['feature'])
+    return topic_verse
 
-def build_vocab(data, params, known_authors) :
+
+def _n_most_frequent_by_author(ds, n):
+    return ds.groupby(['author', 'feature']) \
+        .count() \
+        .sort_values(by='chapter', ascending=False) \
+        .reset_index() \
+        .groupby(['author']) \
+        .head(n).filter(['feature'])
+
+
+def _n_most_frequent(ds, n):
+    return ds.groupby(['feature']) \
+        .count() \
+        .sort_values(by='chapter', ascending=False) \
+        .reset_index() \
+        .head(n).filter(['feature'])
+
+
+def build_vocab(data, params, known_authors):
     """
     Forms a vocabulary by counting all lemmas or lemmas n-grams,
     keeping only the 'no_tokens' most frequent ones. 
@@ -63,20 +66,21 @@ def build_vocab(data, params, known_authors) :
 
     n = params['no_tokens']
     by_author = params['by_author']
-    
+
     ds = data[data.author.isin(known_authors)]
-    ds = ds[~ds.feature.str.contains(r"\[[a-zA-Z0-9]+\]")] # remove code
-    if by_author :
+    ds = ds[~ds.feature.str.contains(r"\[[a-zA-Z0-9]+\]")]  # remove code
+    if by_author:
         r = _n_most_frequent_by_author(ds, n)
-    else :
+    else:
         r = _n_most_frequent(ds, n)
 
     r = r.drop_duplicates()
-    
+
     logging.info(f"Obtained a vocabulary of {len(r)} features")
     return r
-    
-def add_topics(data, topics_data) :
+
+
+def add_topics(data, topics_data):
     """
     Add topic information to author-doc-term data frame
 
@@ -87,28 +91,30 @@ def add_topics(data, topics_data) :
 
     Issue with verse
     """
-    def range_verse(r) :
-        if not pd.isna(r) :
+
+    def range_verse(r):
+        if not pd.isna(r):
             ls = r.split('-')
-            return list(range(int(ls[0]), int(ls[1])+1))
+            return list(range(int(ls[0]), int(ls[1]) + 1))
 
     topics_data.loc[:, 'num'] = topics_data.verses.apply(range_verse)
     topics_data = topics_data.explode('num')
 
     # rename 'verse' with book and chapter info
-    topics_data.loc[:,'verse'] = topics_data.book.astype(str) + "." + topics_data.chapter.astype(str)\
-     + '.' + topics_data.num.astype(str)
+    topics_data.loc[:, 'verse'] = topics_data.book.astype(str) + "." + topics_data.chapter.astype(str) \
+                                  + '.' + topics_data.num.astype(str)
 
-    #get topic by verse
+    # get topic by verse
     topic_verse = topics_data.filter(['topic', 'verse']).set_index('verse')
-    
-    data = data.set_index('verse').join(topic_verse)  #merge into original dataset
+
+    data = data.set_index('verse').join(topic_verse)  # merge into original dataset
     return data.reset_index()
 
-def process_data(data : pd.DataFrame, params) -> pd.DataFrame :
+
+def process_data(data: pd.DataFrame, params) -> pd.DataFrame:
     """
     Performs several transformation to features provided as
-    lemmas and morphological inforamtion.
+    lemmas and morphological information.
 
     See module TextProcessing in TextProcessing.py
 
@@ -118,14 +124,29 @@ def process_data(data : pd.DataFrame, params) -> pd.DataFrame :
     data_proc = tp.proc(data)
     return data_proc
 
-def add_convert(data : pd.DataFrame, data_org) -> pd.DataFrame :
+
+def add_to_report(data: pd.DataFrame,
+                  chapters_to_report: pd.DataFrame) -> pd.DataFrame:
+    """
+    For each chapter in the data, add whether to include
+    that chapter in the final report or not
+    """
+
+    df = chapters_to_report
+    df['full_chapter'] = df['book'] + "." + df['chapter'].astype((str))
+    data.loc[:, 'to_report'] = False
+    data.loc[data.chapter.isin(df.full_chapter) & data.author.isin(df.author), 'to_report'] = True
+    return data
+
+def add_convert(data: pd.DataFrame, data_org: pd.DataFrame) -> pd.DataFrame:
     """
     Add a column translating converted features back to terms as 
     much as possible
     """
-    convert=Convert(data_org)
-    try :
-        data['feature-trans'] = data['feature'].apply(str).apply(eval).apply(convert.to_term)
-    except :
+    convert = Convert(data_org)
+    try:
+        data['feature-trans'] = data['feature'].apply(str).apply(eval) \
+            .apply(convert.to_term)
+    except:
         data['feature-trans'] = data['feature'].apply(str).apply(convert.to_term)
     return data

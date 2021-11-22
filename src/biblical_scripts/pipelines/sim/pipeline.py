@@ -3,9 +3,8 @@
 from kedro.pipeline import node, Pipeline
 
 from biblical_scripts.pipelines.plotting.nodes import plot_sim
-from biblical_scripts.pipelines.data_engineering.nodes import add_convert
 from biblical_scripts.pipelines.reporting.nodes import  (
-     report_table_known, report_table_unknown)
+     report_table_known, report_table_unknown, report_vocab)
 
 from .nodes import (build_model, model_predict, filter_by_author)
 
@@ -22,7 +21,7 @@ def create_pipeline(**kwargs):
              outputs=["model", "reduced_vocabulary0"],
              name="build_model"
             ),
-        node(func=add_convert,
+        node(func=report_vocab,
              inputs=["reduced_vocabulary0", "oshb_parsed"],
              outputs="reduced_vocabulary",
              name="translate_vocab"

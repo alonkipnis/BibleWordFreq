@@ -1,7 +1,9 @@
 #pipeline: Data Engineering 
 
 from kedro.pipeline import node, Pipeline
-from .nodes import (process_data, add_topics, add_convert, build_vocab)
+from .nodes import (process_data, add_topics,
+                    add_convert, build_vocab,
+                    add_to_report)
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -16,8 +18,11 @@ def create_pipeline(**kwargs):
         #    ),
         node(func=add_convert,
              inputs=["data_proc0", "oshb_parsed"],
-             outputs="data_proc",
+             outputs="data_proc1",
             ),
+        node(func=add_to_report,
+             inputs=['data_proc1', 'chapters_to_report'],
+             outputs="data_proc"),
         node(func=build_vocab, 
              inputs=["data_proc", "params:vocab", "params:known_authors"],
              outputs="vocabulary1",

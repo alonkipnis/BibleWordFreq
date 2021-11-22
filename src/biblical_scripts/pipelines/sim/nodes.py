@@ -10,77 +10,90 @@ from typing import Dict, List
 pd.options.mode.chained_assignment = None
 
 
-def _build_model(data, vocab, model_params) :
+def _build_model(data, vocab, model_params):
     md = CompareDocs(vocabulary=vocab, **model_params)
     ds = _prepare_data(data)
     train_data = {}
     lo_auth = ds.author.unique()
-    for auth in lo_auth :
-        train_data[auth] = ds[ds.author==auth]
-    
+    for auth in lo_auth:
+        train_data[auth] = ds[ds.author == auth]
+
     md.fit(train_data)
     return md
 
-def reduce_vocab(data, vocabulary, model_params) -> pd.DataFrame :
+
+def reduce_vocab(data: pd.DataFrame,
+                 vocabulary: pd.DataFrame,
+                 model_params: Dict) -> pd.DataFrame:
     """
-    Build a model using original vocabulary with 
-    possible reduction of vocabulary elements 
-    based on model_params['feat_reduction_method']
+    Returns a reduced version of the original vocabulary with
+    possible based on model_params['feat_reduction_method']
+
+    Args:
+        data            data used for building the model
+        vocabulary      large vocabulary
+        model_params    configurations for model construction
+                        and feature selection.
+    Returns:
+        the new vocabulary
 
     """
-    
+
     reduction_method = model_params['feat_reduction_method']
 
-    if reduction_method == "none" :
+    if reduction_method == "none":
         return vocabulary
-    
+
     vocab = vocabulary.feature.astype(str).to_list()
     md = _build_model(data, vocab, model_params)
-    
-    if reduction_method == "div_persuit" :
+
+    if reduction_method == "div_persuit":
         df_res = md.HCT()
         r = df_res[df_res.thresh].reset_index()
-    if reduction_method == "one_vs_many" :
+    if reduction_method == "one_vs_many":
         r = md.HCT_vs_many_filtered().reset_index()
 
     logging.info(f"Reducing vocabulary to {len(r.feature)} features")
     return r
 
-def _prepare_data(data) :
+
+def _prepare_data(data):
     """
     Arrange data in a way suitable for inference
     """
-    if 'doc_id' in data.columns :
+
+    if 'doc_id' in data.columns:
         return data
-    else :
-        ds = data.rename(columns = {'chapter' : 'doc_id'}).dropna()
+    else:
+        ds = data.rename(columns={'chapter': 'doc_id'}).dropna()
         ds = ds.filter(['author', 'feature', 'token_id', 'doc_id'])
         ds['doc_tested'] = ds['doc_id']
-        ds['doc_id'] = ds['doc_id'].astype(str) + ' by ' + ds['author'] # sometimes there are 
-                                                            # multiple authors per 
-                                                            # chapter
+        ds['doc_id'] = ds['doc_id'].astype(str) + ' by ' + ds['author']  # sometimes there are
+        # multiple authors per
+        # chapter
         ds['len'] = ds.groupby('doc_id').feature.transform('count')
     return ds
 
-def build_model(data : pd.DataFrame, 
-                vocabulary : pd.DataFrame, model_params) -> CompareDocs :
+
+def build_model(data: pd.DataFrame,
+                vocabulary: pd.DataFrame, model_params) -> CompareDocs:
     """
-    Returns a model object
+    Build authorship analysis model. Reduces vocabulary if needed
     
     Args:
-    -----
-    data        DataFrame with columns: 'doc_id', 'author', 'term'
-    vocabulary  DataFrame with column 'feature'
-    
+        data        DataFrame with columns: 'doc_id', 'author', 'term'
+        vocabulary  DataFrame with column 'feature'
+
+    Return:
+        CompareDocs model
     """
-    
-    vocabulary = reduce_vocab(data, vocabulary, model_params)
-    
-    vocab = vocabulary.feature.astype(str).to_list()
-    return _build_model(data, vocab, model_params), vocabulary
-    
-def filter_by_author(df : pd.DataFrame, lo_authors=[],
-                     lo_authors_to_merge=[]) -> pd.DataFrame :
+
+    df_vocabulary = reduce_vocab(data, vocabulary, model_params)
+    vocab = df_vocabulary.feature.astype(str).to_list()
+    return _build_model(data, vocab, model_params), df_vocabulary
+
+def filter_by_author(df: pd.DataFrame, lo_authors=[],
+                     lo_authors_to_merge=[]) -> pd.DataFrame:
     """
     Removes whatever author is not in lo_authors. 
     
@@ -88,17 +101,18 @@ def filter_by_author(df : pd.DataFrame, lo_authors=[],
     lo_authors_to_merge so that all chapters by these
     authors are considered as one document
     """
-    
-    if lo_authors_to_merge :
+
+    if lo_authors_to_merge:
         idcs = df.author.isin(lo_authors_to_merge)
         df.loc[idcs, 'chapter'] = 'chapter0'
-    
-    if lo_authors :
+
+    if lo_authors:
         return df[df.author.isin(lo_authors)]
-    else :
+    else:
         return df
-    
-def model_predict(data_test : pd.DataFrame, model) -> pd.DataFrame :
+
+
+def model_predict(data_test: pd.DataFrame, model) -> pd.DataFrame:
     """
     Args:
     data        a dataframe representing tokens by docs by corpus
@@ -108,33 +122,32 @@ def model_predict(data_test : pd.DataFrame, model) -> pd.DataFrame :
     df_res      Each row is the comparison of a doc against a corpus in 
                 known_authors
     """
-    
+
     ds = _prepare_data(data_test)
-    
-    observable = r"|".join(model.measures) #r"HC|Fisher|chisq"
+
+    observable = r"|".join(model.measures)  # r"HC|Fisher|chisq"
     df_res = pd.DataFrame()
-    for doc_id in ds.doc_id.unique() :
-        tested_doc = ds[ds.doc_id==doc_id]
+    for doc_id in ds.doc_id.unique():
+        tested_doc = ds[ds.doc_id == doc_id]
         auth = tested_doc.author.values[0]
-        df_rec = model.test_doc(tested_doc, of_cls = auth)
-        r = df_rec.iloc[:,df_rec.columns.str.contains(observable)].mean()
+        df_rec = model.test_doc(tested_doc, of_cls=auth)
+        r = df_rec.iloc[:, df_rec.columns.str.contains(observable)].mean()
         r['doc_id'] = doc_id
         r['author'] = auth
         r['len'] = len(tested_doc)
         df_res = df_res.append(r, ignore_index=True)
-    
+
     df_eval = df_res.melt(['author', 'doc_id', 'len'])
-    df_eval['doc_tested'] = df_eval['doc_id'] # for compatibility with sim_full
+    df_eval['doc_tested'] = df_eval['doc_id']  # for compatibility with sim_full
     return df_eval
 
-    
-def evaluate_accuracy(df : pd.DataFrame, 
-                      report_params, parameters) -> pd.DataFrame :
-    
-    def _eval_succ(df) :
+
+def evaluate_accuracy(df: pd.DataFrame,
+                      report_params, parameters) -> pd.DataFrame:
+    def _eval_succ(df):
         df['wrt_author'] = df['variable'].str.extract(r'([^:]+):')
         idx_min = df.groupby(['doc_id', 'author'])['value'].idxmin()
-        res_min = df.loc[idx_min, :].rename(columns={'wrt_author' : 'most_sim'})
+        res_min = df.loc[idx_min, :].rename(columns={'wrt_author': 'most_sim'})
         res_min.loc[:, 'succ'] = res_min.author == res_min.most_sim
         return res_min
 

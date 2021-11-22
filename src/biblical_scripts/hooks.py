@@ -71,7 +71,7 @@ class ProjectHooks:
             "oshb" : oshb_pipeline,
             "de" : de_pipeline,
             "sim_val" : ds_val_pipeline,
-            "sim_only" : sim_only_pipeline,
+            "sim" : sim_only_pipeline,
             "sim_full" : sim_pipeline,
             "plot" : plot_pipeline,
             "sim_bs" : bs_pipeline,
@@ -79,7 +79,7 @@ class ProjectHooks:
             "report" : report_pipeline,
             "chunk_len" : chunk_len_pipeline,
             "all" : oshb_pipeline+de_pipeline+sim_pipeline+plot_pipeline+report_pipeline,
-            "de_sim" : de_pipeline + sim_only_pipeline, 
+            "de+sim" : de_pipeline + sim_only_pipeline,
             "__default__" :  de_pipeline+sim_pipeline+plot_pipeline+report_pipeline}
 
     @hook_impl

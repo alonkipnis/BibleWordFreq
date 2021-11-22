@@ -62,7 +62,8 @@ def create_pipeline(**kwargs):
             name="sim_full"
             ),
         node(func=report_table_full_known,
-            inputs=['sim_full_res', 'params:report', 'params:known_authors'],
+            inputs=['sim_full_res', 'params:report',
+                    'params:known_authors', 'chapters_to_report'],
             outputs="sim_full_table_report_known",
             name="report_table_full_known"
             ),

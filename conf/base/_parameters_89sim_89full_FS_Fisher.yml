@@ -18,9 +18,9 @@ preprocessing:
     #- Ac # cardinal number
     - Ng # noun gentilic
     - Np # name proper
-    #- Pp # Proposition personal
+    # - Pp # Proposition personal
     #- Rd # preposition definite article
-    # - Nc # noun comon
+    #- Nc # noun comon
     #- Vq # verb
 
 vocab:
@@ -28,13 +28,13 @@ vocab:
   by_author: true  # most frequent by each author of the known_authors list
 
 model:
-  feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
+  feat_reduction_method: "one_vs_many" # options are: div_persuit, one_vs_many, none
   gamma: .25  # HC parameter (lower fruction of P-values to consider)
   stbl: true  # type of HC
   min_cnt: 1
   measures:   # list of discrepancy measures available
     - 'HC'
-    #- 'Fisher' # Fisher's combination test
+    - 'Fisher' # Fisher's combination test
     #- 'chisq' # chisquared test
 
 known_authors:
@@ -70,8 +70,8 @@ all_authors:
   - Lev26
 
 report:
-  value: 'HC'
-  #value: 'Fisher'
+  #value: 'HC'
+  value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
   min_length_to_report: 500 # only include texts of at least min_length words

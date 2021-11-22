@@ -18,9 +18,9 @@ preprocessing:
     #- Ac # cardinal number
     - Ng # noun gentilic
     - Np # name proper
-    #- Pp # Proposition personal
+    # - Pp # Proposition personal
     #- Rd # preposition definite article
-    # - Nc # noun comon
+    #- Nc # noun comon
     #- Vq # verb
 
 vocab:

@@ -8,11 +8,13 @@ def create_pipeline(**kwargs):
     return Pipeline(
         [
         node(func=report_table_full_known,
-             inputs=["sim_full_res", "params:report", "params:known_authors"],
+             inputs=["sim_full_res", "params:report",
+                     "params:known_authors", "chapters_to_report"],
              outputs="report_table_full_known"
             ),
         node(func=report_table_full_unknown,
-             inputs=["sim_full_res", "params:report", "params:unk_authors"],
+             inputs=["sim_full_res", "params:report",
+                     "params:unk_authors"],
              outputs="report_table_full_unk"
             ),
         node(func=comp_probs,
