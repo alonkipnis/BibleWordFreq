@@ -11,8 +11,23 @@ pd.options.mode.chained_assignment = None
 
 
 def _build_model(data, vocab, model_params):
+    """
+    Build author/corpus comparison model
+
+    The model is essentially word-frequency table for each author.
+    It supports the evaluation of binomial allocation P-values and
+    the computation of Fisher test statistics, HC test statistics,
+    and other measures.
+
+    Params:
+        :data:  is a dataframe with columns feature, class, doc_id
+        :vocab: is a list of features to consider
+        :model_params: is a dictionary containing parameters for CompareDocs model
+
+    """
     md = CompareDocs(vocabulary=vocab, **model_params)
     ds = _prepare_data(data)
+    logging.info(f"Building a model using {len(ds.doc_id.unique())} documents. ")
     train_data = {}
     lo_auth = ds.author.unique()
     for auth in lo_auth:
@@ -60,17 +75,20 @@ def reduce_vocab(data: pd.DataFrame,
 def _prepare_data(data):
     """
     Arrange data in a way suitable for inference
+
+    params:
+        :data:          The dataset in author-chapter-feature format
     """
 
-    if 'doc_id' in data.columns:
-        return data
+    ds = data.copy()
+    if 'doc_id' in ds.columns:
+        return ds
     else:
-        ds = data.rename(columns={'chapter': 'doc_id'}).dropna()
-        ds = ds.filter(['author', 'feature', 'token_id', 'doc_id'])
+        ds = ds.rename(columns={'chapter': 'doc_id'}).dropna()
+        ds = ds.filter(['author', 'feature', 'token_id', 'doc_id', 'to_report'])
         ds['doc_tested'] = ds['doc_id']
-        ds['doc_id'] = ds['doc_id'].astype(str) + ' by ' + ds['author']  # sometimes there are
-        # multiple authors per
-        # chapter
+        ds['doc_id'] = ds['author'] + '|' + ds['doc_id'].astype(str)  # this is to make
+        # sure doc_id is unique, as sometimes there are multiple authors per chapter
         ds['len'] = ds.groupby('doc_id').feature.transform('count')
     return ds
 
@@ -92,6 +110,7 @@ def build_model(data: pd.DataFrame,
     vocab = df_vocabulary.feature.astype(str).to_list()
     return _build_model(data, vocab, model_params), df_vocabulary
 
+
 def filter_by_author(df: pd.DataFrame, lo_authors=[],
                      lo_authors_to_merge=[]) -> pd.DataFrame:
     """
@@ -101,6 +120,9 @@ def filter_by_author(df: pd.DataFrame, lo_authors=[],
     lo_authors_to_merge so that all chapters by these
     authors are considered as one document
     """
+    #df = df[df.to_report] # uncomment here if you only want to use
+                          # original 50 chapters
+
 
     if lo_authors_to_merge:
         idcs = df.author.isin(lo_authors_to_merge)
@@ -112,29 +134,29 @@ def filter_by_author(df: pd.DataFrame, lo_authors=[],
         return df
 
 
-def model_predict(data_test: pd.DataFrame, model) -> pd.DataFrame:
+def model_predict(test_data: pd.DataFrame, model) -> pd.DataFrame:
     """
     Args:
-    data        a dataframe representing tokens by docs by corpus
-    model       CompareDocs
+        :data:  a dataframe representing tokens by docs by corpus
+        :model: an instance of CompareDocs
     
     Returns:
-    df_res      Each row is the comparison of a doc against a corpus in 
-                known_authors
+    :df_res: Each row is the comparison of a doc against a corpus
     """
 
-    ds = _prepare_data(data_test)
+    ds = _prepare_data(test_data)
 
     observable = r"|".join(model.measures)  # r"HC|Fisher|chisq"
     df_res = pd.DataFrame()
     for doc_id in ds.doc_id.unique():
-        tested_doc = ds[ds.doc_id == doc_id]
-        auth = tested_doc.author.values[0]
-        df_rec = model.test_doc(tested_doc, of_cls=auth)
+        doc_to_test = ds[ds.doc_id == doc_id]
+        auth = doc_to_test.author.values[0]
+        df_rec = model.test_doc(doc_to_test, of_cls=auth)
+
         r = df_rec.iloc[:, df_rec.columns.str.contains(observable)].mean()
         r['doc_id'] = doc_id
         r['author'] = auth
-        r['len'] = len(tested_doc)
+        r['len'] = len(doc_to_test)
         df_res = df_res.append(r, ignore_index=True)
 
     df_eval = df_res.melt(['author', 'doc_id', 'len'])

@@ -1,4 +1,4 @@
-#pipeline: sim full
+# pipeline: sim full
 
 """
 The purpose of this pipeline is to allow the evaluation
@@ -20,7 +20,7 @@ as samples from the null hypothesis that the document and the corpus
 belong to the same author. The rank of d(doc, generic corpus) with
 respect to those samples can be used to associate or disassociate doc
 with the author of the generic corpus. This rank can be converted to 
-a P-value under the model that documents are sampled indepdently from 
+a P-value under the model that documents are sampled independently from
 a corpus. The functions 
 `report_table_full_known` 
 report_table_full_unknown`
@@ -38,49 +38,58 @@ The functions `comp_probs` computes these probabilities, while the function
 """
 
 from kedro.pipeline import node, Pipeline
-from biblical_scripts.pipelines.sim.nodes import (evaluate_accuracy, 
-    filter_by_author)
+from biblical_scripts.pipelines.sim.nodes import (evaluate_accuracy,
+                                                  filter_by_author)
 
 from biblical_scripts.pipelines.reporting.nodes import (
     report_table_full_known, report_table_full_unknown,
-    comp_probs, report_probs)
+    comp_probs, report_probs, summarize_probs)
 
 from .nodes import sim_full
+
 
 def create_pipeline(**kwargs):
     return Pipeline(
         [
-        node(func=filter_by_author, 
-             inputs=["data_proc", "params:all_authors", "params:unk_authors"],
-             outputs="data",
-             name="filter_by_author"
-            ),
-        node(func=sim_full,
-             inputs=["data", "vocabulary", "params:model",
-                         "params:sim_full", "params:known_authors"],
-             outputs="sim_full_res",
-            name="sim_full"
-            ),
-        node(func=report_table_full_known,
-            inputs=['sim_full_res', 'params:report',
-                    'params:known_authors', 'chapters_to_report'],
-            outputs="sim_full_table_report_known",
-            name="report_table_full_known"
-            ),
-        node(func=report_table_full_unknown,
-            inputs=['sim_full_res', 'params:report', 'params:unk_authors'],
-            outputs="sim_full_table_report_unknown",
-            name="report_table_full_unknown"
-            ),
-        node(func=comp_probs,
-             inputs=["sim_full_res", "params:report"],
-             outputs="probs",
-             name="comp_probs"
-            ),
-        node(func=report_probs,
-             inputs=["probs", "params:report"],
-             outputs="probs_table",
-             name="report_probs"
-            )
+            node(func=filter_by_author,
+                 inputs=["data_proc", "params:all_authors",
+                         "params:unknown_authors"],
+                 outputs="data",
+                 name="filter_by_author"
+                 ),
+            node(func=sim_full,
+                 inputs=["data", "vocabulary", "params:model",
+                         "params:sim_full", "params:known_authors",
+                         "chapters_to_report"
+                         ],
+                 outputs="sim_full_res",
+                 name="sim_full"
+                 ),
+            node(func=comp_probs,
+                 inputs=["sim_full_res", "params:report"],
+                 outputs="probs",
+                 name="comp_probs"
+                 ),
+            node(func=report_probs,
+                 inputs=["probs", "params:report"],
+                 outputs="probs_table",
+                 name="report_probs"
+                 ),
+            node(func=report_table_full_known,
+                 inputs=['probs', 'params:report'],
+                 outputs="sim_full_table_report_known",
+                 name="report_table_full_known"
+                 ),
+            node(func=report_table_full_unknown,
+                 inputs=['sim_full_res', 'params:report'],
+                 outputs="sim_full_table_report_unknown",
+                 name="report_table_full_unknown"
+                 ),
+            node(func=summarize_probs,
+                 inputs=['probs', 'params:report',
+                         'chapters_to_report'],
+                 outputs="false_negative_rates",
+                 name="summarize_probs"
+                 )
         ], tags='minimal rank discrepancy'
     )

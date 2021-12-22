@@ -9,8 +9,11 @@ from biblical_scripts.extras.datasets.OSHBDataset import OSHB
 
 def read_OSHB(data) :
     """
-    right now this function is here so that Kedro data manager
-    would load 'oshb_data'. In the future, we can change this 
-    pipline to allow modifications of the catalog (if this catalog is not static)
+    Right now this function is here so that Kedro data manager
+    would load 'oshb_data'.
+
+    If this catalog were not static, we could change this pipeline
+     accordingly.
+
     """
     return data

@@ -1,5 +1,6 @@
 # pipeline: plotting
 # project: bib-scripts
+import pdb
 
 import pandas as pd
 import logging
@@ -67,7 +68,7 @@ def _arrange_metadata(df, value):
 
     df = df[df.variable.str.contains(value)]
     df.loc[:, 'corpus'] = df.variable.str.extract(rf"(^[A-Za-z0-9 ]+)(-ext)?:([A-Za-z]+)")[0]
-    df.loc[:, 'author'] = df.doc_id.str.extract(r"by (.+)")[0]
+    df.loc[:, 'author'] = df.doc_id.str.extract(r"^([^|]+)|")[0]
     df.loc[:, 'variable'] = value
     return df
 
@@ -88,6 +89,7 @@ def plot_sim(sim_res, params):
     # col names compatible with _plot_author_pair
 
     df = df[df.len >= params['min_length_to_report']]
+    assert(len(df) > 0), "No data"
     # get corpus name
     figs = {}
     for auth1 in known_authors:
@@ -182,34 +184,10 @@ def plot_sim_full_bs(sim_full_res_bs, params):
     lo_docs = res.doc.unique()
     res = res[~((res.doc_id == res.doc) & (res.author != 'doc0'))]  # include only
     # data obtained from testing doc_nm, but remove the record associated with
-    # doc_nm if one happended to be used in sampling
+    # doc_nm if one happened to be used in sampling
 
     for doc_nm in lo_docs:
         p = _plot_sim_full_doc(res[(res.doc == doc_nm)])
         p = p + ggtitle(f'{doc_nm} BS')
         p.save(path + '/' + doc_nm + '_BS' + '.png')
 
-
-def plot_sim_bs(res_bs, params, known_authors):
-    """
-    Plot results of bootstrap evaluations
-
-    To do: create a partioned dataset for saving figs to disk
-    """
-
-    path = params['fig_path']
-    value = params['value']
-
-    df = _arrange_metadata(res_bs, value)
-
-    df_figs = pd.DataFrame()
-    for auth1 in known_authors:
-        for auth2 in known_authors:
-            if auth1 < auth2:
-                auth_pair = (auth1, auth2)
-                df_disp = df[df.author.isin(auth_pair) & df['variable'].str.contains(value)]
-                fn = f'{auth1}_vs_{auth2}_BS.png'
-                p = _plot_author_pair(df_disp, value='value', wrt_authors=auth_pair)
-                # + xlim(0,15) + ylim(0,15)
-                p.save(path + '/' + fn)
-    return df_figs

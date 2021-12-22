@@ -3,7 +3,7 @@
 from kedro.pipeline import node, Pipeline
 from .nodes import (process_data, add_topics,
                     add_convert, build_vocab,
-                    add_to_report)
+                    add_to_report, merge_unknown)
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -22,7 +22,12 @@ def create_pipeline(**kwargs):
             ),
         node(func=add_to_report,
              inputs=['data_proc1', 'chapters_to_report'],
-             outputs="data_proc"),
+             outputs="data_proc2"
+             ),
+        node(func=merge_unknown,
+             inputs=["data_proc2", "params:unknown_authors"],
+             outputs="data_proc",
+             ),
         node(func=build_vocab, 
              inputs=["data_proc", "params:vocab", "params:known_authors"],
              outputs="vocabulary1",

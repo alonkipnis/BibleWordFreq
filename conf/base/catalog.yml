@@ -115,3 +115,7 @@ probs_table:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/probs_table.csv
   versioned: false
+
+discriminating_features:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/features.csv

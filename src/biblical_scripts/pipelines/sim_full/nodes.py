@@ -8,51 +8,57 @@ from tqdm import tqdm
 import logging
 
 from typing import Dict, List
-from biblical_scripts.pipelines.sim.nodes import (build_model,
-                                     model_predict, _prepare_data)
+from biblical_scripts.pipelines.sim.nodes import (
+    build_model, model_predict, _prepare_data)
 
-def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame :
+
+def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame:
     """
-    Build a model from training data not containing ds['author]=='TEST'
-    and check ds['doc_id']=='TEST' against this model. Return the results of this test
+    Build a model from all data after removing entries with ds['author]=='TEST'
+    and check the document containing entries ds['doc_id']=='TEST' against
+    this model. Return the discrepancy result.
+
+    Params:
+    :ds:  data
+    :vocabulary:  vocabulary to be used in model construction
+    :params_model:  model parameters
+
+    Returns:
+         model prediction results (arranged as a dataframe)
     """
-    
-    data_train = ds[ds.author != 'TEST']
-    md, _ = build_model(data_train, vocabulary, params_model)
-    
-    data_test = ds[ds.author == 'TEST']
-    return model_predict(data_test, md)
 
+    md, _ = build_model(ds[ds.author != 'TEST'], vocabulary, params_model)
+    return model_predict(ds[ds.author == 'TEST'], md)
 
-def _test_doc(ds, vocabulary, params_model, params_sim, known_authors) :
+def _test_doc(ds, vocabulary, params_model, params_sim, known_authors):
     """
     Test the document marked as 'TEST' 
     """
     itr = 0
     res = pd.DataFrame()
-    
+
     res1 = _check_doc(ds, vocabulary, params_model)  # evaluate wrt to corpus
-    ds_doc = ds[ds.author=='TEST']
+    ds_doc = ds[ds.author == 'TEST']
     res1['itr'] = itr
     res1['smp_len'] = len(ds_doc)
     res1['kind'] = 'generic'
-    res = res.append(res1, ignore_index=True) 
+    res = res.append(res1, ignore_index=True)
 
     tested_doc_id = ds_doc.doc_id.values[0]
-    
-    for ds1 in _gen_test_doc(ds, known_authors, params_sim) :
+
+    for ds1 in _gen_test_doc(ds, known_authors, params_sim):
         # ds1 is a document from an 'extended' corpus
         itr += 1
-        res1 = pd.DataFrame()
         res1 = _check_doc(ds1, vocabulary, params_model)
         res1 = res1[res1.variable.str.contains('-ext')]
         res1['itr'] = itr
-        res1['smp_len'] = len(ds1[ds1.author=='TEST'])
+        res1['smp_len'] = len(ds1[ds1.author == 'TEST'])
         res1['kind'] = 'extended'
-        res = res.append(res1, ignore_index=True) 
+        res = res.append(res1, ignore_index=True)
     return res
 
-def _gen_test_doc(ds0, known_authors, params) :
+
+def _gen_test_doc(ds0, known_authors, params):
     """
     document-corpus pair generator for assesing probability
     of doc-corpus scores. We extend each corpus of
@@ -61,150 +67,114 @@ def _gen_test_doc(ds0, known_authors, params) :
     from the extended corpus. 
     
     
-    TODO: 
-    At the moment, the generator simply goes over all 
-    documents in the pool. We may want to allow 
-    sampling from the pool instead.
+    TODO:
+    At the moment, the generator simply goes over all
+    documents in the pool. We may want to allow instead
+    sampling from the pool with repetitions, in which case
+    we would need to change the probability model we use
+    to assess confident.
     
     """
-        
+
     ds_doc = ds0[ds0.author == 'TEST']
     tested_doc_id = ds_doc.doc_id.values[0]
-    
-    for corp in known_authors :
+
+    for corp in known_authors:
         ds = ds0.copy()
         # mark docs with author corp or TEST
         ds.loc[ds.author.isin([corp, 'TEST']), 'author'] = f'{corp}-ext'
         # create a pool consisting of marjed docs exceeding minimum length
         ds_pool = ds[(ds.author == f'{corp}-ext') & (ds.len >= params['min_length_to_consider'])]
-    
+
         smp_pool = ds_pool.doc_id.unique()
-        for smp in smp_pool :
+        for smp in smp_pool:
             ds1 = ds.copy()
             ds1.loc[ds.doc_id == smp, 'author'] = 'TEST'
             yield ds1
 
-            
+
 def sim_full(data, vocabulary, params_model,
-             params_sim, known_authors) :
+             params_sim, known_authors, chapters_to_report):
     """
     report discrepancy between every document to every 
     corpus of known authorship
     """
-    
-    ds = _prepare_data(data)
+
+    ds = _prepare_data(data, )
     lo_docs = ds.doc_id.unique()
-    
+
+    if not chapters_to_report.empty:  # only consider known chapters out
+        # of `chapters_to_report'
+        lo_chapters = chapters_to_report['book'] \
+                      + '.' + chapters_to_report['author'] + '|'\
+        + chapters_to_report['chapter'].astype(str)
+
+        lo_docs = [doc for doc in lo_docs if doc in lo_chapters.values or doc not in known_authors]
+        assert (len(lo_docs) >= len(chapters_to_report)), "Some of the requested chapters are missing"
+
     res = pd.DataFrame()
-    for doc in tqdm(lo_docs) :
-        logging.info(f"Evaluating {doc}")
+    logging.info(f"Going over a list of {len(lo_docs)} docs...")
+    for doc in tqdm(lo_docs):
+        logging.info(f"Testing {doc}...")
         ds1 = ds[ds.author.isin(known_authors) | (ds.doc_id == doc)]
-        ds1.loc[ds1.doc_id == doc, 'author'] = 'TEST'
+        ds1.loc[ds1.doc_id == doc, 'author'] = 'TEST'  # mark tested doc
         res1 = _test_doc(ds1, vocabulary, params_model, params_sim, known_authors)
         res1['doc_tested'] = doc
         res1['len_doc_tested'] = len(ds1[ds1.author == 'TEST'])
-        res = res.append(res1, ignore_index=True)    
+        res = res.append(res1, ignore_index=True)
     return res
-        
 
-def _gen_doc_corpus_pairs(ds, params) :
+
+def _gen_doc_corpus_pairs(ds, params):
     """
     document-corpus pair generator: We first form a pool
-     of text atoms, such as lemma, verse, or document. The
-    'new' document is obtained 
-    the document is generated by sampling using onr
+     of text atoms, such as lemma, verse, or chapter. The
+    'new' document is obtained by sampling from this pool.
+
+    In the most simple situation, the pool is simply all chapters
+    in the corpus.
     
     """
-    
+
     n = params['n']
     random = params.get('random', False)
     sampling_method = params.get('sampling_method', False)
     contig = params.get('sample_contiguous', False)
     replace = params.get('sample_w_replacements', True)
-    k_docs = params.get('k_docs')
-    
+
     ds_doc = ds[ds.author == 'doc0']
-    
-    if sampling_method == 'feature' :
-        ln = len(ds_doc) # not working
+
+    if sampling_method == 'feature':
+        ln = len(ds_doc)  # not working
         smp_pool = ds.index
 
-    if sampling_method == 'verse' : # not working
+    if sampling_method == 'verse':  # not working
         ln = len(ds_doc.verse.unique())
         smp_pool = ds.verse.unique()
 
-    if sampling_method == 'doc_id' :
+    if sampling_method == 'doc_id':
         ln = len(ds_doc.doc_id.unique())
         smp_pool = ds.doc_id.unique()
-    
+
     ds1 = ds.copy().set_index(sampling_method)
     nmax = min(n, len(smp_pool))
-    for i in range(nmax) :
-        if random :
-            if contig :
-                k = np.random.randint(1, len(smp_pool)-ln) #sample contigous part
-                smp = smp_pool[k:k+ln]
-            else :
-                smp = np.random.choice(smp_pool, size = ln, replace=replace)
-        else :
+    for i in range(nmax):
+        if random:
+            if contig:
+                k = np.random.randint(1, len(smp_pool) - ln)  # sample contigous part
+                smp = smp_pool[k:k + ln]
+            else:
+                smp = np.random.choice(smp_pool, size=ln, replace=replace)
+        else:
             smp = smp_pool[i]
-        
+
         ds_doc = ds1.loc[smp, :].reset_index()
         ds_corp = ds1.drop(smp, axis=0).reset_index()
-        
+
         yield (ds_doc, ds_corp)
 
 
-def _test_doc_corpus(ds_doc, ds_corp, params_sim, similarity_func) :
-    """
-    First compute discrepancy of doc and corpus;
-    then run over  many doc-corpus pairs based on params_sim
-    
-    Args:
-    -----
-    df_corpus : corpus
-    df_doc : tested corpus
-    params_sim : dictionary of parameters
-    similarity_func :
-        vocabulary : pd.DataFrame
-        params_model : dictionary of model parameters
-
-    Returns:
-    -------
-    res : pd df summarizing result of each iteration
-
-    NOTE: it is assumed that df_doc is not part of df_corpus
-    """
-    
-    res = pd.DataFrame()
-    ds_corp.loc[:,'author'] = 'corpus0'
-    ds_doc.loc[:,'author'] = 'doc0'
-
-    #ds1 = ds1.reset_index()
-
-    res1 = _compare_doc_corpus(ds_doc, ds_corp, **similarity_func)
-    res1['itr'] = 0
-    res = res.append(res1, ignore_index=True)
-
-    ds = ds_corp.append(ds_doc)
-    # sample from combined corpus
-        
-    itr = 0
-    for d in _gen_doc_corpus_pairs(ds, params_sim) :
-        itr += 1
-        ds_doc, ds_corp = d[0], d[1]
-        ds_corp['author'] = 'corpus_smp'
-        ds_doc['author'] = 'doc_smp'
-        
-        res1 = _compare_doc_corpus(ds_doc, ds_corp, **similarity_func)
-        res1['itr'] = itr
-        res1['smp_len'] = len(ds_doc)
-        res = res.append(res1, ignore_index=True)
-        
-    return res
-    
-    
-def _compare_doc_corpus(ds_doc, ds_corp, vocabulary, params_model) :
+def _compare_doc_corpus(ds_doc, ds_corp, vocabulary, params_model):
     md = build_model(ds_corp, vocabulary, params_model)
     res = model_predict(ds_doc, md)
     return res

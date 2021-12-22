@@ -8,6 +8,7 @@ parameter in `parameters.yml`
 
 import pandas as pd
 import logging
+from typing import List
 
 from biblical_scripts.pipelines.data_engineering.TextProcessing import TextProcessing
 from biblical_scripts.extras.Convert import Convert
@@ -51,6 +52,15 @@ def _n_most_frequent(ds, n):
         .reset_index() \
         .head(n).filter(['feature'])
 
+
+def merge_unknown(data: pd.DataFrame, unknown_authors: List) -> pd.DataFrame:
+    """
+    Mark chapters of authors in `unknown_authors` by their corpus name,
+    so that we consider all these chapters as a single documents.
+    """
+    idc = data.author.isin(unknown_authors)
+    data.loc[idc, 'chapter'] = data.loc[idc, 'author']
+    return data
 
 def build_vocab(data, params, known_authors):
     """
