@@ -13,7 +13,8 @@ def create_pipeline(**kwargs):
         [
         node(func=filter_by_author, 
              inputs=["data_proc", "params:known_authors",
-                     "params:unknown_authors"],
+                     "params:unknown_authors",
+                     "params:only_reportables"],
              outputs="data_filtered",
              name="filter_by_author"
             ),
@@ -28,12 +29,12 @@ def create_pipeline(**kwargs):
              name="translate_vocab"
             ),
         node(func=model_predict, 
-             inputs=["data_proc", "model"],
+             inputs=["data_filtered", "model"],
              outputs="sim_res",
              name="model_predict",
             ),
         node(func=report_table_known,
-             inputs=["sim_res", "params:report", "chapters_to_report"],
+             inputs=["sim_res", "params:report"],
              outputs="sim_table_report_known",
              name="report_table_known",
             ),
@@ -43,7 +44,7 @@ def create_pipeline(**kwargs):
              name="report_table_unknown",
             ),
         node(func=plot_sim,
-             inputs=["sim_res", "params:report"],
+             inputs=["sim_res", "params:report", "reference_data"],
              outputs=None,
              name="plot_sim"
             ),

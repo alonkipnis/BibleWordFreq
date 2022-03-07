@@ -12,7 +12,11 @@ oshb_raw:
 oshb_parsed:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/oshd_parsed.csv
-    
+
+reference_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/reference_data.csv
+
 chapters_to_report:
   type: pandas.CSVDataSet
   filepath: data/01_raw/to_report.csv

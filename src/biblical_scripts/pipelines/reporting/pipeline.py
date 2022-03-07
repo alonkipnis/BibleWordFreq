@@ -17,7 +17,7 @@ def create_pipeline(**kwargs):
              name="report_probs"
             ),
         node(func=summarize_probs,
-             inputs=['probs', 'params:report', 'chapters_to_report'],
+             inputs=['probs', 'params:report'],
              outputs="false_negative_rates",
              name="summarize_probs"
              )

@@ -1,4 +1,4 @@
-# This configuration resulted in 92% accuracy
+only_reportables: true
 
 preprocessing:
   extract_prefix: true # split lemmas by prefix and suffix
@@ -29,12 +29,12 @@ vocab:
 
 model:
   feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
-  gamma: .25  # HC parameter (lower fruction of P-values to consider)
+  gamma: .15  # HC parameter (lower fraction of P-values to consider)
   stbl: true  # type of HC
   #min_cnt: 1
   measures:   # list of discrepancy measures available
     - 'HC'
-    #- 'Fisher' # Fisher's combination test
+    - 'Fisher' # Fisher's combination test
     #- 'chisq' # chisquared test
 
 known_authors:
@@ -53,6 +53,7 @@ unknown_authors:
   - Esth
   - Prov
   - Lev26
+  - Deut4
 
 all_authors:
   - Dtr
@@ -68,13 +69,14 @@ all_authors:
   - Esth
   - Prov
   - Lev26
-  #- Deut4
+  - Deut4
 
 report:
   value: 'HC'
   #value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
+  anova: False
   min_length_to_report: 100 # only include texts of at least min_length words
   sig_level: .05            # significance level for rank-based testing
   known_authors:
@@ -92,20 +94,35 @@ report:
   - Esth
   - Prov
   - Lev26
-  #- Deut4
+  - Deut4
 
 features:
   fig_path: 'data/08_reporting/Figs'
+  out_path: 'data/08_reporting/'
   num_features_to_plot: 30
   known_authors:
     - Dtr
     - DtrH
     - P
   specific_chapters:
+    - "Ark1|Ark1"
+    - "Ark2|Ark2"
+    - "Chr1|Chr1"
+    - "Chr2|Chr2"
+    - "Early_Jacob|Early_Jacob"
+    - "Esth|Esth"
+    - "Gibea|Gibea"
+    - "Late_Abraham|Late_Abraham"
+    - "Deut4|Deut.4"
+    - "Lev26|Lev26"
+    - "Prov|Prov"
     - "DtrH|Josh.1"
     - "DtrH|Judg.2"
     - "P|Gen.17"
     - "P|Exod.6"
+    - "Dtr|Deut.8"
+    - "Dtr|Deut.28"
+    - "DtrH|Josh.23"
 
 
 bootstrapping:
@@ -118,11 +135,13 @@ sim_full: # Make sure that n is larger than max_no_docs_per_corpus.
           # required to simulate a different null distribution, e.g.,
           # by sampling text chunks
   n: 200
+  #remove_concordant: true # whether to remove concordant tests (for ANOVA)
   min_length_to_consider: 100
   sampling_method: "doc_id"
   random: false
   sample_w_replacements: true  # not used unless random=true
   sample_contiguous: true  # not used unless random=true
+
 
 
 chunk_len_params:
@@ -149,3 +168,4 @@ chunk_len_params:
     - 1800
     - 1900
     - 2000
+    - 3500

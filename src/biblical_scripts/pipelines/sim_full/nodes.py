@@ -30,29 +30,30 @@ def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame:
     md, _ = build_model(ds[ds.author != 'TEST'], vocabulary, params_model)
     return model_predict(ds[ds.author == 'TEST'], md)
 
+
 def _test_doc(ds, vocabulary, params_model, params_sim, known_authors):
     """
-    Test the document marked as 'TEST' 
+    Test the document marked as 'TEST' against each corpus in
+    known_authors
     """
     itr = 0
     res = pd.DataFrame()
 
     res1 = _check_doc(ds, vocabulary, params_model)  # evaluate wrt to corpus
-    ds_doc = ds[ds.author == 'TEST']
     res1['itr'] = itr
-    res1['smp_len'] = len(ds_doc)
+    res1['smp_len'] = len(ds[ds.author == 'TEST'])
     res1['kind'] = 'generic'
     res = res.append(res1, ignore_index=True)
 
-    tested_doc_id = ds_doc.doc_id.values[0]
 
     for ds1 in _gen_test_doc(ds, known_authors, params_sim):
-        # ds1 is a document from an 'extended' corpus
+        # ds1 is a document from an 'extended' ('modified')
+        # corpus
         itr += 1
         res1 = _check_doc(ds1, vocabulary, params_model)
         res1 = res1[res1.variable.str.contains('-ext')]
         res1['itr'] = itr
-        res1['smp_len'] = len(ds1[ds1.author == 'TEST'])
+        res1['checked_doc_len'] = len(ds1[ds1.author == 'TEST'])
         res1['kind'] = 'extended'
         res = res.append(res1, ignore_index=True)
     return res
@@ -60,7 +61,7 @@ def _test_doc(ds, vocabulary, params_model, params_sim, known_authors):
 
 def _gen_test_doc(ds0, known_authors, params):
     """
-    document-corpus pair generator for assesing probability
+    document-corpus pair generator for assessing probability
     of doc-corpus scores. We extend each corpus of
     'known_authors' by adding a tested document (assumed to
     have 'TEST' as its author). We then 'sample' documents
@@ -76,15 +77,14 @@ def _gen_test_doc(ds0, known_authors, params):
     
     """
 
-    ds_doc = ds0[ds0.author == 'TEST']
-    tested_doc_id = ds_doc.doc_id.values[0]
-
-    for corp in known_authors:
+    #original_corpus = ds0[ds0.author == 'TEST'].doc_id.values[0].split('|')[0]
+    for corpus in known_authors:
         ds = ds0.copy()
-        # mark docs with author corp or TEST
-        ds.loc[ds.author.isin([corp, 'TEST']), 'author'] = f'{corp}-ext'
-        # create a pool consisting of marjed docs exceeding minimum length
-        ds_pool = ds[(ds.author == f'{corp}-ext') & (ds.len >= params['min_length_to_consider'])]
+
+        # mark docs with author == corpus or author == TEST
+        ds.loc[ds.author.isin([corpus, 'TEST']), 'author'] = f'{corpus}-ext'
+        # create a pool consisting of docs exceeding minimum length
+        ds_pool = ds[(ds.author == f'{corpus}-ext') & (ds.len >= params['min_length_to_consider'])]
 
         smp_pool = ds_pool.doc_id.unique()
         for smp in smp_pool:
@@ -94,23 +94,20 @@ def _gen_test_doc(ds0, known_authors, params):
 
 
 def sim_full(data, vocabulary, params_model,
-             params_sim, known_authors, chapters_to_report):
+             params_sim, known_authors, reference_data):
     """
     report discrepancy between every document to every 
     corpus of known authorship
     """
 
-    ds = _prepare_data(data, )
-    lo_docs = ds.doc_id.unique()
+    ds = _prepare_data(data)
+    lo_docs_org = ds.doc_id.unique()
 
-    if not chapters_to_report.empty:  # only consider known chapters out
-        # of `chapters_to_report'
-        lo_chapters = chapters_to_report['book'] \
-                      + '.' + chapters_to_report['author'] + '|'\
-        + chapters_to_report['chapter'].astype(str)
+    to_report = reference_data[reference_data.to_report]
+    lo_chapters_to_report = to_report['author'] + '|' + to_report['book'] + '.' + to_report['chapter'].astype(str)
 
-        lo_docs = [doc for doc in lo_docs if doc in lo_chapters.values or doc not in known_authors]
-        assert (len(lo_docs) >= len(chapters_to_report)), "Some of the requested chapters are missing"
+    lo_docs = [doc for doc in lo_docs_org if
+               doc in lo_chapters_to_report.values or 'chapter0' in doc]
 
     res = pd.DataFrame()
     logging.info(f"Going over a list of {len(lo_docs)} docs...")
@@ -120,6 +117,11 @@ def sim_full(data, vocabulary, params_model,
         ds1.loc[ds1.doc_id == doc, 'author'] = 'TEST'  # mark tested doc
         res1 = _test_doc(ds1, vocabulary, params_model, params_sim, known_authors)
         res1['doc_tested'] = doc
+        # Here we remove results of documents that we chosen not to report on
+        # because they were too small hence their HC score is usually low
+        res1 = res1[res1.doc_id.isin(lo_chapters_to_report) | res1.doc_id.str.contains('chapter0')]
+        # It may be better to remove those documents from the pool altogether
+
         res1['len_doc_tested'] = len(ds1[ds1.author == 'TEST'])
         res = res.append(res1, ignore_index=True)
     return res

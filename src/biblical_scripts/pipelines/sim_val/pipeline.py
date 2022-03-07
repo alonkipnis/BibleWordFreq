@@ -18,8 +18,10 @@ from .nodes import (cross_validation)
 def create_pipeline(**kwargs):
     return Pipeline(
         [
-        node(func=filter_by_author, 
-             inputs=["data_proc", "params:all_authors", "params:unk_authors"],
+        node(func=filter_by_author,
+             inputs=["data_proc", "params:known_authors",
+                     "params:unknown_authors",
+                     "params:only_reportables"],
              outputs="data",
              name="filter_by_author"
             ),
@@ -38,7 +40,7 @@ def create_pipeline(**kwargs):
              name="report_table_unknown",
             ),
         node(func=plot_sim,
-             inputs=["sim_res_cv", "params:report"],
+             inputs=["sim_res_cv", "params:report", "reference_data"],
              outputs="",
              name="plot_sim"
             )

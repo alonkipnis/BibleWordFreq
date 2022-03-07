@@ -20,8 +20,10 @@ from .nodes import (test_chunks_len)
 def create_pipeline(**kwargs):
     return Pipeline(
         [
-        node(func=filter_by_author, 
-             inputs=["data_proc", "params:known_authors", "params:unk_authors"],
+        node(func=filter_by_author,
+             inputs=["data_proc", "params:known_authors",
+                     "params:unknown_authors",
+                     "params:only_reportables"],
              outputs="data_filtered",
              name="filter_by_author"
             ),

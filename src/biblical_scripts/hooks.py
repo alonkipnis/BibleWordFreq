@@ -72,7 +72,7 @@ class ProjectHooks:
             "de" : de_pipeline,
             "sim_val" : ds_val_pipeline,
             "sim" : sim_only_pipeline,
-            "sim_full" : sim_pipeline,
+            "sim_full" : de_pipeline + sim_pipeline,
             "plot" : plot_pipeline,
             "sim_bs" : bs_pipeline,
             "report" : report_pipeline,

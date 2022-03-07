@@ -16,8 +16,9 @@ from .nodes import bs_main_val
 def create_pipeline(**kwargs):
     return Pipeline(
         [
-        node(func=filter_by_author, 
-             inputs=["data_proc", "params:known_authors"],
+        node(func=filter_by_author,
+             inputs=["data_proc", "params:all_authors",
+                     "params:unknown_authors", "params:only_reportables"],
              outputs="data",
              name="filter_by_author"
             ),

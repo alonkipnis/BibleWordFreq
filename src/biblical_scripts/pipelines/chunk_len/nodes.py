@@ -10,7 +10,7 @@ from biblical_scripts.pipelines.sim.nodes import (
    build_model, model_predict)
 import logging
 import numpy as np
-
+from biblical_scripts.pipelines.sim_full.nodes import _test_doc, _gen_test_doc, _check_doc
 
 def _sample_chunk(ds1, author, chunk_size,
 		 sampling_method='verse', contiguous=True) :
@@ -41,13 +41,13 @@ def _sample_chunk(ds1, author, chunk_size,
 
 	ds1.loc[smp, 'author'] = '<TEST>'
 	ds1.loc[smp, 'doc_id'] = '<TEST>'
-  
+
 	return ds1
 
 
 def _evaluate_discrepancies(data, vocab, model_params) :
 	"""
-	Build a word-frequency model. Evalaute descripancy 
+	Build a word-frequency model. Evaluate discrepancy
 	of document '<TEST>' with respect to any of the other
 	authors in the data
 	"""
@@ -55,16 +55,39 @@ def _evaluate_discrepancies(data, vocab, model_params) :
 	data_train = data[~(data.author == "<TEST>")]
 	data_test = data[data.author == "<TEST>"]
 
+
 	md, _ = build_model(data_train, vocab, model_params)
 	df1 = model_predict(data_test, md)
 	return df1
+
+def _evaluate_discrepancies_full(data, vocab, model_params) :
+	"""
+	Build a word-frequency model. Evaluate discrepancy
+	of document '<TEST>' with respect to any of the other
+	authors in the data
+	"""
+
+	data_train = data[~(data.author == "<TEST>")]
+	data_test = data[data.author == "<TEST>"]
+
+	res = pd.DataFrame()
+
+	res1 = _test_doc(data, vocab, model_params, params_sim, known_authors)
+	res1['doc_tested'] = doc
+	# Here we remove results of documents that we chosen not to report on
+	res1 = res1[res1.doc_id.isin(lo_chapters_to_report) | res1.doc_id.str.contains('chapter0')]
+	# It may be better to remove those documents from the pool altogether
+
+	res1['len_doc_tested'] = len(ds1[ds1.author == 'TEST'])
+	return res1
+
 
 
 def test_chunks_len(data, vocab, lo_authors, model_params, chunk_len_params) :
 	"""
 	Discrepancies versus length. For each author and chunk_length, sample 
 	a chunk from the corpus of the author of size chunk_length and
-	evalaute discrepancy of that chunk to all corpora
+	evaluate discrepancy of that chunk to all corpora
 	"""
 	
 	lo_lengths = chunk_len_params['chunk_lengths']
@@ -76,15 +99,15 @@ def test_chunks_len(data, vocab, lo_authors, model_params, chunk_len_params) :
 		for i in range(nMonte) :
 			for auth in lo_authors :
 				ds1 = _sample_chunk(data.copy(), author = auth,
-						chunk_size = chunk_size, 
-						sampling_method=chunk_len_params['sampling_method'],
-						contiguous=chunk_len_params['contiguous_chunk']
+						chunk_size = chunk_size,
+						sampling_method = chunk_len_params['sampling_method'],
+						contiguous = chunk_len_params['contiguous_chunk']
 						)
 				res1 = _evaluate_discrepancies(ds1, vocab, model_params)
-				res1.loc[:,'true_author'] = auth
-				res1.loc[:,'chunk_size'] = chunk_size
-				res1.loc[:,'itr'] = i
-				res1.loc[:,'experiment'] = 'chunk_len'
+				res1.loc[:, 'true_author'] = auth
+				res1.loc[:, 'chunk_size'] = chunk_size
+				res1.loc[:, 'itr'] = i
+				res1.loc[:, 'experiment'] = 'chunk_len'
 				res = res.append(res1, ignore_index=True)
 	return res
 

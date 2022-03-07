@@ -27,7 +27,9 @@ def _build_model(data, vocab, model_params):
     """
     md = CompareDocs(vocabulary=vocab, **model_params)
     ds = _prepare_data(data)
-    logging.info(f"Building a model using {len(ds.doc_id.unique())} documents. ")
+    logging.info(f"Building CompareDocs model using {len(ds.doc_id.unique())} documents. ")
+    # if len(ds.doc_id.unique()) == 48:
+    #     import pdb; pdb.set_trace()
     train_data = {}
     lo_auth = ds.author.unique()
     for auth in lo_auth:
@@ -66,8 +68,10 @@ def reduce_vocab(data: pd.DataFrame,
         df_res = md.HCT()
         r = df_res[df_res.thresh].reset_index()
     if reduction_method == "one_vs_many":
-        r = md.HCT_vs_many_filtered().reset_index()
+        r = md.HCT_vs_many(ret_only_selected=True).reset_index()
 
+    if len(r) == 0:
+        logging.warning("No feature was selected by HCT")
     logging.info(f"Reducing vocabulary to {len(r.feature)} features")
     return r
 
@@ -93,7 +97,7 @@ def _prepare_data(data):
     return ds
 
 
-def build_model(data: pd.DataFrame,
+def build_model(data_train: pd.DataFrame,
                 vocabulary: pd.DataFrame, model_params) -> CompareDocs:
     """
     Build authorship analysis model. Reduces vocabulary if needed
@@ -106,23 +110,28 @@ def build_model(data: pd.DataFrame,
         CompareDocs model
     """
 
-    df_vocabulary = reduce_vocab(data, vocabulary, model_params)
+    df_vocabulary = reduce_vocab(data_train, vocabulary, model_params)
     vocab = df_vocabulary.feature.astype(str).to_list()
-    return _build_model(data, vocab, model_params), df_vocabulary
+    return _build_model(data_train, vocab, model_params), df_vocabulary
 
 
-def filter_by_author(df: pd.DataFrame, lo_authors=[],
-                     lo_authors_to_merge=[]) -> pd.DataFrame:
+def filter_by_author(df: pd.DataFrame, lo_authors,
+                     lo_authors_to_merge,
+                     only_reportables) -> pd.DataFrame:
     """
     Removes whatever author is not in lo_authors. 
     
     Adds chapter info for whatever author in 
     lo_authors_to_merge so that all chapters by these
     authors are considered as one document
-    """
-    #df = df[df.to_report] # uncomment here if you only want to use
-                          # original 50 chapters
 
+    is only_reportables is True then we only consider documents that
+    we deemed long enough to report when we collected the data
+
+    """
+
+    if only_reportables:
+        df = df[df.to_report]  # only consider reportable chapters
 
     if lo_authors_to_merge:
         idcs = df.author.isin(lo_authors_to_merge)
@@ -134,7 +143,7 @@ def filter_by_author(df: pd.DataFrame, lo_authors=[],
         return df
 
 
-def model_predict(test_data: pd.DataFrame, model) -> pd.DataFrame:
+def model_predict(data_test: pd.DataFrame, model) -> pd.DataFrame:
     """
     Args:
         :data:  a dataframe representing tokens by docs by corpus
@@ -144,7 +153,7 @@ def model_predict(test_data: pd.DataFrame, model) -> pd.DataFrame:
     :df_res: Each row is the comparison of a doc against a corpus
     """
 
-    ds = _prepare_data(test_data)
+    ds = _prepare_data(data_test)
 
     observable = r"|".join(model.measures)  # r"HC|Fisher|chisq"
     df_res = pd.DataFrame()
@@ -158,8 +167,7 @@ def model_predict(test_data: pd.DataFrame, model) -> pd.DataFrame:
         r['author'] = auth
         r['len'] = len(doc_to_test)
         df_res = df_res.append(r, ignore_index=True)
-
-    df_eval = df_res.melt(['author', 'doc_id', 'len'])
+        df_eval = df_res.melt(['author', 'doc_id', 'len'])
     df_eval['doc_tested'] = df_eval['doc_id']  # for compatibility with sim_full
     return df_eval
 

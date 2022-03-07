@@ -53,14 +53,14 @@ def create_pipeline(**kwargs):
         [
             node(func=filter_by_author,
                  inputs=["data_proc", "params:all_authors",
-                         "params:unknown_authors"],
+                         "params:unknown_authors", "params:only_reportables"],
                  outputs="data",
                  name="filter_by_author"
                  ),
             node(func=sim_full,
                  inputs=["data", "vocabulary", "params:model",
                          "params:sim_full", "params:known_authors",
-                         "chapters_to_report"
+                         "reference_data"
                          ],
                  outputs="sim_full_res",
                  name="sim_full"
@@ -68,8 +68,7 @@ def create_pipeline(**kwargs):
             node(func=comp_probs,
                  inputs=["sim_full_res", "params:report"],
                  outputs="probs",
-                 name="comp_probs"
-                 ),
+                 name="comp_probs"),
             node(func=report_probs,
                  inputs=["probs", "params:report"],
                  outputs="probs_table",
@@ -81,13 +80,12 @@ def create_pipeline(**kwargs):
                  name="report_table_full_known"
                  ),
             node(func=report_table_full_unknown,
-                 inputs=['sim_full_res', 'params:report'],
+                 inputs=['probs', 'params:report'],
                  outputs="sim_full_table_report_unknown",
                  name="report_table_full_unknown"
                  ),
             node(func=summarize_probs,
-                 inputs=['probs', 'params:report',
-                         'chapters_to_report'],
+                 inputs=['probs', 'params:report'],
                  outputs="false_negative_rates",
                  name="summarize_probs"
                  )

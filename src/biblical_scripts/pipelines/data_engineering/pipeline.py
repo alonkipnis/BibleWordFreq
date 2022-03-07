@@ -21,7 +21,7 @@ def create_pipeline(**kwargs):
              outputs="data_proc1",
             ),
         node(func=add_to_report,
-             inputs=['data_proc1', 'chapters_to_report'],
+             inputs=['data_proc1', 'reference_data'],
              outputs="data_proc2"
              ),
         node(func=merge_unknown,

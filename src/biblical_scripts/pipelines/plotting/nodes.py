@@ -73,19 +73,22 @@ def _arrange_metadata(df, value):
     return df
 
 
-def plot_sim(sim_res, params):
+def plot_sim(sim_res, params, reference_data):
     """
     Illustrate discrepancy results
 
-
-    To do: create a partioned dataset for saving figs to disk
+    To DO:
+        create a partioned dataset for saving figs to disk
     """
 
     known_authors = params['known_authors']
     path = params['fig_path']
     value = params['value']
 
-    df = _arrange_metadata(sim_res, value)
+    to_report = reference_data[reference_data.to_report]
+    lo_chapters_to_report = to_report['author'] + '|' + to_report['book'] + '.' + to_report['chapter'].astype(str)
+
+    df = _arrange_metadata(sim_res[sim_res.doc_id.isin(lo_chapters_to_report)], value)
     # col names compatible with _plot_author_pair
 
     df = df[df.len >= params['min_length_to_report']]

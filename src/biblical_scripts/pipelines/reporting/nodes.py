@@ -5,14 +5,12 @@ import pandas as pd
 import numpy as np
 import logging
 import scipy
+from scipy.stats import f as fdist
 
-from typing import Dict, List
+from typing import List
 from biblical_scripts.pipelines.sim.nodes import (_prepare_data)
-from biblical_scripts.pipelines.data_engineering.nodes import add_convert
+from biblical_scripts.pipelines.data_engineering.nodes import (add_convert)
 
-
-# import warnings
-# warnings.filterwarnings("error")
 
 def _add_stats_BS(data: pd.DataFrame, value: str, by: List) -> pd.DataFrame:
     """
@@ -40,13 +38,12 @@ def add_stats_BS(data: pd.DataFrame, params):
 
 def report_sim_full(sim_full_res, params_report) -> pd.DataFrame:
     """
-    Report accuracy of min-discrepancy authorship attirbution of full evaluations
+    Report accuracy of min-discrepancy authorship attribution of Full evaluations
     """
     res = _arrange_metadata(sim_full_res, params_report['value'])  # add 'author' and 'corpus' columns
-    res = res[res.kind == 'generic']  # only measuerements of original docs
+    res = res[res.kind == 'generic']  # only measurements of original docs
 
     res = res[res.author.isin(params_report['known_authors'])]
-    res = res[res.corpus.isin(params_report['known_authors'])]
 
     df = evaluate_accuracy(res)
 
@@ -58,7 +55,7 @@ def report_sim_full(sim_full_res, params_report) -> pd.DataFrame:
 
 def _eval_succ(df):
     """
-    Indicate whetehr minimal discripancy is obtained by the true author.
+    Indicate whether minimal discrepancy is obtained by the true author.
     """
     idx_min = df.groupby(['doc_id', 'author'])['value'].idxmin()
     res_min = df.loc[idx_min, :].rename(columns={'corpus': 'most_sim'})
@@ -68,14 +65,14 @@ def _eval_succ(df):
 
 def evaluate_accuracy(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Indicate whetehr minimal discripancy is obtained by the true author.
+    Indicate whether minimal discrepancy is obtained by the true author.
     
-    Args:
-    df      data of discripancy results in columns 'value'. Othet columns
+    Parameters:
+        :df:  data of discrepancy results in columns 'value'. Other columns
             are 'doc_id', 'author', 'corpus'
     
     Returns:
-    res     one row per doc_id. Indicate whether minimal discripancy is  
+    :res:     one row per doc_id. Indicate whether minimal discrepancy is
              obtained by the true author.
     """
 
@@ -83,7 +80,49 @@ def evaluate_accuracy(df: pd.DataFrame) -> pd.DataFrame:
     return res
 
 
-def _comp_probs(df: pd.DataFrame, by: List) -> pd.DataFrame:
+def _comp_probs_anova(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    F-test. Numerator is sum-of-squares of inter-corpus HC
+    scores when the tested document belongs to the corpus
+    with which we check attribution. The denominator is the
+    sum-of-squares of inter-corpus HC scores when the
+    document does not belong to the corpus.
+    """
+
+    df0 = df[df.kind == 'generic']
+    df1 = df[df.kind != 'generic']
+
+    def ssquares(x):
+        return np.sum((x - x.mean()) ** 2)
+
+    df01 = df0[df0.author == df0.corpus]
+    df02 = df01.filter(['corpus', 'author', 'variable', 'doc_tested', 'value'])
+    dfss0 = df02.groupby(['variable', 'corpus', 'author']).agg(['mean', 'count', ssquares])
+
+    dfss1 = df1.filter(['author', 'variable', 'value',
+                        'corpus', 'doc_id', 'doc_tested']) \
+        .groupby(['doc_tested', 'variable', 'corpus', 'author']) \
+        .agg(['mean', 'count', ssquares])
+
+    dfss = dfss1.join(dfss0.reset_index(2).drop('author',axis=1),
+                      rsuffix='0', lsuffix='1')
+
+    def ftest(r):
+        dfn = r[('value1', 'count')] - 1
+        dfd = r[('value0', 'count')] - 1
+        s =  r[('value1', 'ssquares')] / r[('value0', 'ssquares')]
+        return fdist.sf(s, dfn=dfn, dfd=dfd)
+
+    # this is the F-test for excessive variance
+    dfss['anova'] = -np.log(dfss.apply(ftest, axis=1))
+
+    df_ret = pd.DataFrame(dfss.anova).reset_index() \
+        .merge(df0[['corpus', 'doc_tested', 'value']],
+               on=['doc_tested', 'corpus'])
+    return df_ret
+
+
+def _comp_probs_t(df: pd.DataFrame, by: List) -> pd.DataFrame:
     """
     Computes mean, std, CI's, rank and t-test for each document over 
     each corpus (as set by 'by' parameter)
@@ -97,29 +136,41 @@ def _comp_probs(df: pd.DataFrame, by: List) -> pd.DataFrame:
         pd.Series.rank, pct=True, method='min')
 
     df0 = df[df.kind == 'generic']
+    grp0 = df0.groupby(['corpus', 'author'])
+    df_summary = grp0.agg({'value': ['mean', 'std', 'median', 'count']}, as_index=False).reset_index()
+    print("======= Average values of within and between corpus discrepancies =======")
+    print(df_summary[df_summary[('value', 'count')] > 1])
+
     df1 = df[df.kind != 'generic']
 
-    grp = df1.groupby(by)
     value = 'value'
-    res = grp.agg({value: ['mean', 'std', 'count',
-                           lambda x: pd.Series.quantile(x, q=.05),
-                           lambda x: pd.Series.quantile(x, q=.95)
-                           ]}, as_index=False).reset_index() \
-        .rename(columns={'<lambda_0>': 'CI05', '<lambda_1>': 'CI95'})
+    EPS = 0.1
+    df1.loc[:, 'value'] = np.sqrt(np.maximum(df1.value, EPS))
+
+    df0 = df1[df1.doc_id == df1.doc_tested]
+    df1 = df1.drop(df0.index)  # remove generic tests
+
+    grp = df1.groupby(by)
+
+    res = grp.agg({value: ['mean', 'std', 'median', 'mad', 'count']}, as_index=False).reset_index()
 
     res.loc[:, 'doc_id'] = res['doc_tested']
 
     dfm = df0.merge(res[['doc_id', 'corpus', 'value']],
-                    on=['doc_id', 'corpus'], how='left') # only include results for generic chapters
+                    on=['doc_id', 'corpus'], how='left')  # only include results for generic chapters
 
     mu = dfm[(value, 'mean')]
-    std = dfm[(value, 'std')]
+    std = dfm[(value, 'std')]  # note that there is no need to adjust
+    # for the number of DoF by multiplying by np.sqrt(n / (n - 1))
+    # because the 'std' function of pandas uses (n-1) in denominator
+    # when computing the std
     n = dfm[(value, 'count')]
 
-    # dfm.loc[:,'prob'] = 1 - (np.floor(dfm['rank'])-1) / n
+    median = dfm[(value, 'median')]
+
     dfm.loc[:, 'rank_pval'] = 1 - dfm['rank']
-    dfm.loc[:, 't-score'] = dfm[value] - mu / (std * np.sqrt(n / (n - 1)))
-    dfm.loc[:, 't_pval'] = scipy.stats.t.sf(dfm['t-score'], df=n - 1)
+    dfm.loc[:, 't-score'] = (dfm[value] - mu) / (std)
+    dfm.loc[:, 't_test'] = -np.log(scipy.stats.t.sf(dfm['t-score'], df=n - 1))
     dfm.loc[:, 'author'] = dfm.author.apply(_get_author_from_doc_id)
     return dfm
 
@@ -137,11 +188,33 @@ def comp_probs(sim_full_res, params_report):
         logging.error("No results were found. Perhaps you did not run"
                       " sim_full with the requested measure?")
 
-    dfm = _comp_probs(df, by=['author', 'doc_tested', 'corpus'])
+    if params_report['anova']:
+        dfm = _comp_probs_anova(df)
+    else:
+        dfm = _comp_probs_t(df, by=['author', 'doc_tested', 'corpus'])
     return dfm
 
 
 def report_probs(dfm, params_report):
+    """
+    Arrange dfm as an easy-to-read table
+
+    """
+
+    value = params_report['value']
+    dfm = dfm.rename(columns={'variable': value})
+
+    if params_report['anova']:
+        test_value_name = 'anova'
+    else:
+        test_value_name = 't_test'
+
+    return dfm.pivot('corpus', 'doc_tested',
+                     [value, test_value_name]
+                     ).reset_index()
+
+
+def report_probs_t(dfm, params_report):
     """
     Arrange dfm as an easy-to-read table 
 
@@ -152,7 +225,7 @@ def report_probs(dfm, params_report):
                      [value, 'rank_pval', 't_pval', 't-score']).reset_index()
 
 
-def summarize_probs(dfm, params, chapters_to_report):
+def summarize_probs(dfm, params):
     """
     Print summary from probabilities evaluated in comp_probs
     This function is mostly here to provide information for
@@ -160,8 +233,53 @@ def summarize_probs(dfm, params, chapters_to_report):
 
     """
 
-    if not chapters_to_report.empty:
-        dfm = _filter_to_certain_chapters(dfm, chapters_to_report)
+    if params['anova']:
+        test_value_name = 'anova'
+    else:
+        test_value_name = 't_test'
+    value = params['value']
+
+    dfm.loc[:, 'sig_pval'] = dfm[test_value_name] < params['sig_level']
+    print("========================RESULTS================================")
+
+    dfm.loc[:, 'author'] = dfm.doc_tested.apply(_get_author_from_doc_id)
+    dfr = dfm[dfm.author.isin(params['known_authors'])]
+
+    idx_score_val = dfr.groupby('doc_tested')['value'].idxmin()
+    print(f"Accuracy with {value}: ",
+          (dfr.loc[idx_score_val, 'corpus'] == dfr.loc[idx_score_val, 'author']).mean())
+
+    idx_score = dfr.groupby('doc_tested')[test_value_name].idxmin()
+    print(f"Accuracy with {test_value_name} of {value}: ",
+          (dfr.loc[idx_score, 'corpus'] == dfr.loc[idx_score, 'author']).mean())
+
+
+    print(f"Misclassified with {test_value_name}:")
+    idx_miss = [idx for idx in idx_score if dfr.loc[idx, 'author'] != dfr.loc[idx, 'corpus']]
+
+    print(dfr.loc[idx_miss, :])
+
+    print(f"False Negatives with {test_value_name}:")
+    print(dfr[(dfr.author == dfr.corpus) & dfr.sig_pval])
+    print(f"False 'Positives' with {test_value_name}:")
+    print(dfr[(dfr.author != dfr.corpus) & ~dfr.sig_pval])
+    df_res = dfr[dfr.author == dfr.corpus] \
+        .groupby(['variable']) \
+        .mean() \
+        .filter(['sig_pval']) \
+        .rename(columns={'sig_pval': f'FNR-{test_value_name}'})
+    print(f"False negative rates over {len(dfr)} chapters of known authorship:")
+    print(df_res)
+    return df_res
+
+
+def summarize_probs_t(dfm, params):
+    """
+    Print summary from probabilities evaluated in comp_probs
+    This function is mostly here to provide information for
+    debugging purposes.
+
+    """
 
     dfm.loc[:, 'sig_t'] = dfm['t_pval'] < params['sig_level']
     dfm.loc[:, 'sig_rank'] = dfm['rank_pval'] < params['sig_level']
@@ -169,21 +287,26 @@ def summarize_probs(dfm, params, chapters_to_report):
     print("========================RESULTS================================")
     dfr = dfm[dfm.author.isin(params['known_authors'])]
     idx_var = dfr.groupby('doc_id')['value'].idxmin()
-    idx_tpval = dfr.groupby('doc_id')['t_pval'].idxmax()
+    idx_tscore = dfr.groupby('doc_id')['t-score'].idxmin()
     print(f"Accuracy with {dfr['variable'].unique()}: ",
           (dfr.loc[idx_var, 'corpus'] == dfr.loc[idx_var, 'author']).mean())
-    print(f"Accuracy with t p-value: ",
-          (dfr.loc[idx_tpval, 'corpus'] == dfr.loc[idx_tpval, 'author']).mean())
+    print(f"Accuracy with t score: ",
+          (dfr.loc[idx_tscore, 'corpus'] == dfr.loc[idx_tscore, 'author']).mean())
 
-    print("False Negatives with t p-value:")
+    print("Misclassified with t score:")
+    idx_miss = [idx for idx in idx_tscore if dfr.loc[idx, 'author'] != dfr.loc[idx, 'corpus']]
+
+    print(dfr.loc[idx_miss, :])
+
+    print("False Negatives with t test:")
     print(dfr[(dfr.author == dfr.corpus) & dfr.sig_t])
-    print("False 'Positives' with t p-value:")
+    print("False 'Positives' with t test:")
     print(dfr[(dfr.author != dfr.corpus) & ~dfr.sig_t])
-    df_res = dfr[dfr.author == dfr.corpus]\
-                .groupby(['variable']) \
-                .mean() \
-                .filter(['sig_t', 'sig_rank']) \
-                .rename(columns={'sig_t': 'FNR-t', 'sig_rank': 'FNR-rank'})
+    df_res = dfr[dfr.author == dfr.corpus] \
+        .groupby(['variable']) \
+        .mean() \
+        .filter(['sig_t', 'sig_rank']) \
+        .rename(columns={'sig_t': 'FNR-t', 'sig_rank': 'FNR-rank'})
     print(f"False negative rates over {len(dfr)} chapters of known authorship:")
     print(df_res)
     return df_res
@@ -228,7 +351,7 @@ def _report_table(sim_res):
     res_tbl.loc['author', :] = [_get_author_from_doc_id(r) for r in res_tbl.columns]
     res_tbl.loc['succ', :] = res_tbl.loc['min_corpus', :] == res_tbl.loc['author', :]
     res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ'], :].mean(1)
-    print(res_table.loc['succ', :])
+    print(res_tbl.loc['succ', :])
     return res_tbl.reset_index()
 
 
@@ -247,7 +370,7 @@ def _filter_to_certain_chapters(df, book_chapter: pd.DataFrame):
     return df[df.doc_id.isin(lo_chapters)]
 
 
-def report_table_known(df, report_params, chapters_to_report=pd.DataFrame()):
+def report_table_known(df, report_params):
     """
     Arrange discrepancies test results to indicate accuracy of 
     authorship attribution of known authors
@@ -256,11 +379,8 @@ def report_table_known(df, report_params, chapters_to_report=pd.DataFrame()):
     -----
     df                  discrepancies of many (doc, cropus) pairs
     report_params       parameters indicating how to report 
-    chapters_to_report   only report on chapters in this list
-    """
 
-    if not chapters_to_report.empty:
-        df = _filter_to_certain_chapters(df, chapters_to_report)
+    """
 
     value = report_params['value']
     known_authors = report_params['known_authors']
@@ -275,7 +395,8 @@ def report_table_known(df, report_params, chapters_to_report=pd.DataFrame()):
     df_res = _report_table(df1)
 
     print("========================RESULTS================================")
-    print(f"Reporting over {df_res.shape[1] - 1} chapters:")
+    print(f"Reporting over chapters:\n{df_res.columns.tolist()}\n")
+    print(f"Overall {df_res.shape[1] - 1} chapters:")
     print("\n \t MEAN Values: ", df_res['mean'], "\n\n")
     return df_res.reset_index()
 
@@ -326,30 +447,11 @@ def report_table_len(df, params_report):
     return res
 
 
-def _pre_report_table_full(df):
-    """
-    Compute rank-based P-values w.r.t. each 
-    corpus
-
-    """
-
-    lo_docs = df.doc_tested.unique().tolist()
-    res = pd.DataFrame()
-    for doc in lo_docs:
-        df1 = df[df.doc_tested == doc]
-        df1.loc[:, 'rnk'] = df1.groupby('corpus')['value'].rank(pct=True,
-                                                                method='min')
-        df1.loc[:, 'rnk_pval'] = 1 - df1.loc[:, 'rnk']
-        df2 = df1[df1.kind == 'generic']
-        res = res.append(df2, ignore_index=True)
-    return res
-
-
 def _arrange_sim_full_results(res):
     """
     For HC, use max(HC, 1)
     """
-    min_value_hc = 1.0
+    min_value_hc = -5.0
     idcs = res.variable.str.contains(':HC')
     res.loc[idcs, 'value'] = np.maximum(res.loc[idcs, 'value'], min_value_hc)
     return res
@@ -359,91 +461,59 @@ def report_table_full_known(probs, params):
     """
     Params:
         :probs:     the output of compute_probs
+        :params:    reporting parameters
 
     """
 
     dfr = probs[probs.author.isin(params['known_authors'])]
     value = params['value']
 
-    assert len(dfr.variable.unique())==1, "Cannot report on more than one variable"
+    if params['anova']:
+        test_value_name = 'anova'
+    else:
+        test_value_name = 't_test'
 
-    dfr = dfr.rename(columns={'value' : value})
-    dfm = dfr.pivot('corpus', 'doc_id', [value, 't-score'])
+    assert len(dfr.variable.unique()) == 1, "One and only one reportable variable is permitted"
+
+    dfr = dfr.rename(columns={'value': value})
+    dfm = dfr.pivot('corpus', 'doc_tested', [value, test_value_name])
 
     idx_min = dfm.idxmin()
     succ_val = idx_min[value].index.str.extract(r"([^|]+)")[0] == idx_min[value].values.tolist()
-    succ_t = idx_min['t-score'].index.str.extract(r"([^|]+)")[0] == idx_min['t-score'].values.tolist()
+    succ_test = idx_min[test_value_name].index.str.extract(r"([^|]+)")[0] == idx_min[test_value_name].values.tolist()
 
-    dfm.loc['succ', :] = pd.concat([succ_val, succ_t], ignore_index=True).values
+    dfm.loc['succ', :] = pd.concat([succ_val, succ_test], ignore_index=True).values
 
     return dfm
 
 
-
-def OLD_report_table_full_known(sim_res_full, report_params, chapters_to_report):
-
-    if not chapters_to_report.empty:
-        sim_res_full = _filter_to_certain_chapters(sim_res_full, chapters_to_report)
-
-    known_authors = report_params['known_authors']
-    value = report_params['value']
-    # >>HERE!! add t-test scores and report on its value
-    # Alos, use idxmin instea of idxmax in Line 382
-    import pdb; pdb.set_trace()
-    res = _arrange_metadata(sim_res_full, value)
-    res = _pre_report_table_full(res)
-
-    res = res[res.len >= report_params['min_length_to_report']]
-
-    res_f = res[res.author.isin(known_authors)]
-    lo_authors = res_f.author.unique().tolist()
-    lo_corpora = res_f.corpus.unique().tolist()
-
-    res_tbl = res_f.pivot('corpus', 'doc_id', 'rnk_pval')
-
-    cmin = res_tbl.idxmax().rename('max_pval_corpus')
-    res_tbl = res_tbl.append(cmin)
-
-    res_tbl.loc['author', :] = [_get_author_from_doc_id(r) for r in res_tbl.columns]
-    res_tbl.loc['succ', :] = res_tbl.loc['max_pval_corpus', :] == res_tbl.loc['author', :]
-
-    # add length info
-    # res_tbl = res_tbl.T.merge(res_f[['doc_id', 'len']].drop_duplicates(), on='doc_id').T
-
-    # compute false alarm rate
-    res_tbl.loc['false_alarm', :] = False
-    for auth in lo_authors:
-        idcs = res_tbl.loc['author', :] == auth
-        res_tbl.loc['false_alarm', idcs] = res_tbl.loc[auth, idcs] < report_params['sig_level']
-
-    # add column indicating success and false alarm rates
-    res_tbl['mean'] = res_tbl.loc[lo_corpora + ['succ', 'false_alarm'], :].mean(1)
-
-    print(f"Reporting over {res_tbl.shape[1] - 1} chapters:")
-    print("\n \t MEAN: ", res_tbl['mean'], "\n\n")
-    return res_tbl.reset_index()
-
-
-def report_table_full_unknown(sim_res_full, params_report):
-    dfr = probs[~probs.author.isin(params['known_authors'])]
+def report_table_full_unknown(probs, params):
+    dfr = probs[probs.author.isin(params['unknown_authors'])]
     value = params['value']
 
-    assert len(dfr.variable.unique()) == 1, "Cannot report on more than one variable"
+    assert len(dfr.variable.unique()) == 1, "One and only one reportable variable is permitted"
 
     dfr = dfr.rename(columns={'value': value})
-    dfm = dfr.pivot('corpus', 'doc_id', [value, 't-score'])
+
+    if params['anova']:
+        test_value_name = 'anova'
+    else:
+        test_value_name = 't_test'
+
+    dfm = dfr.pivot('corpus', 'doc_tested', [value, test_value_name])
 
     idx_min = dfm.idxmin()
     succ_val = idx_min[value].index.str.extract(r"([^|]+)")[0] == idx_min[value].values.tolist()
-    succ_t = idx_min['t-score'].index.str.extract(r"([^|]+)")[0] == idx_min['t-score'].values.tolist()
+    succ_test = idx_min[test_value_name].index.str.extract(r"([^|]+)")[0] == idx_min[test_value_name].values.tolist()
 
-    dfm.loc['succ', :] = pd.concat([succ_val, succ_t], ignore_index=True).values
+    dfm.loc['succ', :] = pd.concat([succ_val, succ_test], ignore_index=True).values
 
     return dfm
 
 
 def _get_author_from_doc_id(st: str) -> str:
     return st.split('|')[0]
+
 
 def _report_table(df):
     """

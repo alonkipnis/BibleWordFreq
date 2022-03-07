@@ -56,7 +56,7 @@ def _n_most_frequent(ds, n):
 def merge_unknown(data: pd.DataFrame, unknown_authors: List) -> pd.DataFrame:
     """
     Mark chapters of authors in `unknown_authors` by their corpus name,
-    so that we consider all these chapters as a single documents.
+    so that such chapters are considered as a single documents.
     """
     idc = data.author.isin(unknown_authors)
     data.loc[idc, 'chapter'] = data.loc[idc, 'author']
@@ -136,16 +136,15 @@ def process_data(data: pd.DataFrame, params) -> pd.DataFrame:
 
 
 def add_to_report(data: pd.DataFrame,
-                  chapters_to_report: pd.DataFrame) -> pd.DataFrame:
+                  reference_data: pd.DataFrame) -> pd.DataFrame:
     """
     For each chapter in the data, add whether to include
     that chapter in the final report or not
     """
 
-    df = chapters_to_report
-    df['full_chapter'] = df['book'] + "." + df['chapter'].astype((str))
-    data.loc[:, 'to_report'] = False
-    data.loc[data.chapter.isin(df.full_chapter) & data.author.isin(df.author), 'to_report'] = True
+    df = reference_data
+    df['chapter'] = df['book'] + "." + df['chapter'].astype((str))
+    data = data.merge(df[['to_report', 'chapter', 'author']], how='inner', on=['author', 'chapter'])
     return data
 
 def add_convert(data: pd.DataFrame, data_org: pd.DataFrame) -> pd.DataFrame:
