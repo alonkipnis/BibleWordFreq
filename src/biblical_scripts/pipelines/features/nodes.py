@@ -12,7 +12,7 @@ import logging
 from bidi import algorithm as bidialg
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
-
+from biblical_scripts.pipelines.data_engineering.nodes import build_vocab
 
 def _remove_backslash(text):
     """
@@ -119,20 +119,22 @@ def get_features(data, vocab, data_raw, model_params, params_features):
     return dfm
 
 
-def get_features_chapter(data, vocab, data_raw, model_params, params_features):
+def get_features_chapter(data, params_vocab, data_raw, params_model, params_features):
     lo_authors = params_features['known_authors']
     lo_chapters = params_features['specific_chapters']
-
     for ch in lo_chapters:
         for auth in lo_authors:
+
             logging.info(f"Checking features: {ch} vs. {auth}")
             ds = data[(data.author == auth) | data.chapter.str.contains(fr"{ch}")]
              # WARNING: here we may have a match if chapter string
              # equals the author of ch
             ds.loc[data.chapter.str.contains(fr"{ch}"), 'author'] = ch
 
-
-            md = build_model(ds, vocab, model_params)
+            data1 = data.copy()
+            data1.loc[data.chapter.str.contains(fr"{ch}"), 'author'] = ch
+            vocab = build_vocab(data1, params_vocab)
+            md = build_model(ds, vocab, params_model)
             df = md[0].HCT_vs_many()
             df.loc[:, f'{auth}:freq'] = df[f'{auth}:n'] / df[f'{auth}:T']
             df.loc[:, f'{ch}:freq'] = df[f'{ch}:n'] / df[f'{ch}:T']

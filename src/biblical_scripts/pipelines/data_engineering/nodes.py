@@ -39,7 +39,7 @@ def _get_topics(topics_data):
 def _n_most_frequent_by_author(ds, n):
     return ds.groupby(['author', 'feature']) \
         .count() \
-        .sort_values(by='chapter', ascending=False) \
+        .sort_values(by='token_id', ascending=False) \
         .reset_index() \
         .groupby(['author']) \
         .head(n).filter(['feature'])
@@ -48,7 +48,7 @@ def _n_most_frequent_by_author(ds, n):
 def _n_most_frequent(ds, n):
     return ds.groupby(['feature']) \
         .count() \
-        .sort_values(by='chapter', ascending=False) \
+        .sort_values(by='token_id', ascending=False) \
         .reset_index() \
         .head(n).filter(['feature'])
 
@@ -62,22 +62,30 @@ def merge_unknown(data: pd.DataFrame, unknown_authors: List) -> pd.DataFrame:
     data.loc[idc, 'chapter'] = data.loc[idc, 'author']
     return data
 
-def build_vocab(data, params, known_authors):
-    """
-    Forms a vocabulary by counting all lemmas or lemmas n-grams,
-    keeping only the 'no_tokens' most frequent ones. 
-    There are two modes:
-    1) 'no_tokens' most frequent across entire dataset
-    2) 'no_tokens' most frequent by each of the known author
-    (option 2 is preffered to avoid biases associated with the
-    situation in which more data is avaialble for some authors)
 
+def build_vocab(data, params):
+    """
+    Forms a vocabulary by counting all tokens, keeping only
+    the 'no_tokens' most frequent ones.
+    There are two modes:
+    1) 'no_tokens' most frequent tokens across entire dataset
+    2) 'no_tokens' most frequent tokens by each author
+    (option 2 is preferred to avoid biases associated with the
+    situation in which the author classes are unbalanced)
+
+    Args:
+        data    the dataframe containing one feature per row
+        params:
+          n         number of tokens to keep
+          authors   which authors to consider
+          by_author whether to use mode 1 or 2
     """
 
     n = params['no_tokens']
     by_author = params['by_author']
+    authors = params['authors']
 
-    ds = data[data.author.isin(known_authors)]
+    ds = data[data.author.isin(authors)]
     ds = ds[~ds.feature.str.contains(r"\[[a-zA-Z0-9]+\]")]  # remove code
     if by_author:
         r = _n_most_frequent_by_author(ds, n)
@@ -85,7 +93,6 @@ def build_vocab(data, params, known_authors):
         r = _n_most_frequent(ds, n)
 
     r = r.drop_duplicates()
-
     logging.info(f"Obtained a vocabulary of {len(r)} features")
     return r
 
@@ -138,8 +145,8 @@ def process_data(data: pd.DataFrame, params) -> pd.DataFrame:
 def add_to_report(data: pd.DataFrame,
                   reference_data: pd.DataFrame) -> pd.DataFrame:
     """
-    For each chapter in the data, add whether to include
-    that chapter in the final report or not
+    For each chapter in the data, add a column indicating whether
+    to include that chapter in the final report or not
     """
 
     df = reference_data
@@ -147,10 +154,11 @@ def add_to_report(data: pd.DataFrame,
     data = data.merge(df[['to_report', 'chapter', 'author']], how='inner', on=['author', 'chapter'])
     return data
 
+
 def add_convert(data: pd.DataFrame, data_org: pd.DataFrame) -> pd.DataFrame:
     """
     Add a column translating converted features back to terms as 
-    much as possible
+    much as possible (sometimes two different words has the same lemma)
     """
     convert = Convert(data_org)
     try:

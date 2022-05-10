@@ -47,8 +47,8 @@ def reduce_vocab(data: pd.DataFrame,
     possible based on model_params['feat_reduction_method']
 
     Args:
-        data            data used for building the model
-        vocabulary      large vocabulary
+        data    used for building the model
+        vocabulary  large vocabulary
         model_params    configurations for model construction
                         and feature selection.
     Returns:
@@ -98,13 +98,14 @@ def _prepare_data(data):
 
 
 def build_model(data_train: pd.DataFrame,
-                vocabulary: pd.DataFrame, model_params) -> CompareDocs:
+                vocabulary: pd.DataFrame,
+                model_params) -> CompareDocs:
     """
     Build authorship analysis model. Reduces vocabulary if needed
     
     Args:
-        data        DataFrame with columns: 'doc_id', 'author', 'term'
-        vocabulary  DataFrame with column 'feature'
+        data_train        DataFrame with columns: 'doc_id', 'author', 'term'
+        vocabulary        DataFrame with column 'feature'
 
     Return:
         CompareDocs model
@@ -155,7 +156,7 @@ def model_predict(data_test: pd.DataFrame, model) -> pd.DataFrame:
 
     ds = _prepare_data(data_test)
 
-    observable = r"|".join(model.measures)  # r"HC|Fisher|chisq"
+    observable = r"|".join(model.measures)
     df_res = pd.DataFrame()
     for doc_id in ds.doc_id.unique():
         doc_to_test = ds[ds.doc_id == doc_id]

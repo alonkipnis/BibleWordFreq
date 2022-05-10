@@ -10,6 +10,7 @@ import logging
 from typing import Dict, List
 from biblical_scripts.pipelines.sim.nodes import (
     build_model, model_predict, _prepare_data)
+from biblical_scripts.pipelines.data_engineering.nodes import build_vocab
 
 
 def _check_doc(ds, vocabulary, params_model) -> pd.DataFrame:
@@ -93,7 +94,7 @@ def _gen_test_doc(ds0, known_authors, params):
             yield ds1
 
 
-def sim_full(data, vocabulary, params_model,
+def sim_full(data, params_vocab, params_model,
              params_sim, known_authors, reference_data):
     """
     report discrepancy between every document to every 
@@ -115,6 +116,7 @@ def sim_full(data, vocabulary, params_model,
         logging.info(f"Testing {doc}...")
         ds1 = ds[ds.author.isin(known_authors) | (ds.doc_id == doc)]
         ds1.loc[ds1.doc_id == doc, 'author'] = 'TEST'  # mark tested doc
+        vocabulary = build_vocab(ds1, params_vocab)
         res1 = _test_doc(ds1, vocabulary, params_model, params_sim, known_authors)
         res1['doc_tested'] = doc
         # Here we remove results of documents that we chosen not to report on

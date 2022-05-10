@@ -14,7 +14,7 @@ def create_pipeline(**kwargs):
                           name="get_features"
                           ),
                         node(func=get_features_chapter,
-                             inputs=["data_proc", 'vocabulary', "oshb_parsed",
+                             inputs=["data_proc", 'params:vocab', "oshb_parsed",
                                      "params:model", "params:features"],
                              outputs=None,
                              name="get_features_chapter"

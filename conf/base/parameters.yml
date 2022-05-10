@@ -24,18 +24,25 @@ preprocessing:
     #- Vq # verb
 
 vocab:
-  no_tokens: 3000  # most frequent tokens
+  no_tokens: 1000  # most frequent tokens
   by_author: true  # most frequent by each author of the known_authors list
+  authors:
+    - Dtr
+    - DtrH
+    - P
+
 
 model:
   feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
-  gamma: .15  # HC parameter (lower fraction of P-values to consider)
+  gamma: .35  # HC parameter (lower fraction of P-values to consider)
   stbl: true  # type of HC
   #min_cnt: 1
   measures:   # list of discrepancy measures available
     - 'HC'
     - 'Fisher' # Fisher's combination test
+    - 'majority'
     #- 'chisq' # chisquared test
+  n_fold: 4
 
 known_authors:
   - Dtr
@@ -50,6 +57,7 @@ unknown_authors:
   - Early_Jacob
   - Chr2
   - Chr1
+  - Chr
   - Esth
   - Prov
   - Lev26
@@ -66,13 +74,16 @@ all_authors:
   - Early_Jacob
   - Chr2
   - Chr1
+  - Chr
   - Esth
   - Prov
   - Lev26
   - Deut4
 
 report:
+  log_scale: true
   value: 'HC'
+  #value: 'majority'
   #value: 'Fisher'
   #value: 'chisq'
   fig_path: 'data/08_reporting/Figs'
@@ -91,10 +102,27 @@ report:
   - Early_Jacob
   - Chr2
   - Chr1
+  - Chr
   - Esth
   - Prov
   - Lev26
   - Deut4
+
+bootstrapping:
+  nBS: 5
+  value: 'HC'
+  reduce_feature: None
+
+sim_full: # Make sure that n is larger than max_no_docs_per_corpus.
+          # These parameters are
+          # required to simulate a different null distribution, e.g.,
+          # by sampling text chunks in future versions.
+  n: 200
+  min_length_to_consider: 100
+  sampling_method: "doc_id"
+  random: false
+  sample_w_replacements: true  # only relevant if random=true
+  sample_contiguous: true      # only relevant if random=true
 
 features:
   fig_path: 'data/08_reporting/Figs'
@@ -123,32 +151,30 @@ features:
     - "Dtr|Deut.8"
     - "Dtr|Deut.28"
     - "DtrH|Josh.23"
-
-
-bootstrapping:
-  nBS: 100
-  value: 'HC'
-  reduce_feature: None
-
-sim_full: # Make sure that n is larger than max_no_docs_per_corpus.
-          # These parameters are
-          # required to simulate a different null distribution, e.g.,
-          # by sampling text chunks
-  n: 200
-  #remove_concordant: true # whether to remove concordant tests (for ANOVA)
-  min_length_to_consider: 100
-  sampling_method: "doc_id"
-  random: false
-  sample_w_replacements: true  # not used unless random=true
-  sample_contiguous: true  # not used unless random=true
-
-
+    - "Dtr|Deut.6"
+    - "DtrH|Deut.26"
+    - "DtrH|Deut.11"
+    - "Chr|chapter0"
 
 chunk_len_params:
-  sampling_method: "lemma"
-  contiguous_chunk: "true"
+  sampling_method: "verse"
+  contiguous_chunk: "false"
   nMonte: 500
   chunk_lengths:
+    - 5
+    - 10
+    - 30
+    - 50
+    - 75
+    - 100
+    - 125
+    - 150
+    - 175
+    - 200
+    - 250
+  chunk_lengths1:
+    - 50
+    - 100
     - 200
     - 300
     - 400
@@ -164,8 +190,8 @@ chunk_len_params:
     - 1400
     - 1500
     - 1600
-    - 1700
     - 1800
-    - 1900
     - 2000
-    - 3500
+    - 2250
+    - 2500
+

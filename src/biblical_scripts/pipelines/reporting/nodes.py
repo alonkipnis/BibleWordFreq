@@ -33,7 +33,29 @@ def _add_stats_BS(data: pd.DataFrame, value: str, by: List) -> pd.DataFrame:
 
 def add_stats_BS(data: pd.DataFrame, params):
     value = params['value']
-    return _add_stats_BS(_arrange_metadata(data, value), value='value', by=['doc_tested', 'corpus'])
+    return _add_stats_BS(_arrange_metadata(data, value), value='value',
+                         by=['doc_tested', 'corpus'])
+
+def add_stats_BS_full(sim_full_res, params_report):
+    """
+    Rank-based test and t-test for discrepancy results obtained by
+    augmanting each corpus with the tested document
+    """
+
+    sim_full_res = _arrange_sim_full_results(sim_full_res)
+    df = _arrange_metadata(sim_full_res, params_report['value'])
+
+    if len(df) == 0:
+        logging.error("No results were found. Perhaps you did not run"
+                      " sim_full with the requested measure?")
+
+    if params_report['anova']:
+        dfm = _comp_probs_anova(df)
+    else:
+        dfm = _comp_probs_t(df, by=['author', 'doc_tested',
+                                    'corpus', 'itr_BS'],
+                            log_scale=params_report['log_scale'])
+    return dfm
 
 
 def report_sim_full(sim_full_res, params_report) -> pd.DataFrame:
@@ -104,13 +126,13 @@ def _comp_probs_anova(df: pd.DataFrame) -> pd.DataFrame:
         .groupby(['doc_tested', 'variable', 'corpus', 'author']) \
         .agg(['mean', 'count', ssquares])
 
-    dfss = dfss1.join(dfss0.reset_index(2).drop('author',axis=1),
+    dfss = dfss1.join(dfss0.reset_index(2).drop('author', axis=1),
                       rsuffix='0', lsuffix='1')
 
     def ftest(r):
         dfn = r[('value1', 'count')] - 1
         dfd = r[('value0', 'count')] - 1
-        s =  r[('value1', 'ssquares')] / r[('value0', 'ssquares')]
+        s = r[('value1', 'ssquares')] / r[('value0', 'ssquares')]
         return fdist.sf(s, dfn=dfn, dfd=dfd)
 
     # this is the F-test for excessive variance
@@ -122,7 +144,7 @@ def _comp_probs_anova(df: pd.DataFrame) -> pd.DataFrame:
     return df_ret
 
 
-def _comp_probs_t(df: pd.DataFrame, by: List) -> pd.DataFrame:
+def _comp_probs_t(df: pd.DataFrame, by: List, log_scale=True) -> pd.DataFrame:
     """
     Computes mean, std, CI's, rank and t-test for each document over 
     each corpus (as set by 'by' parameter)
@@ -138,39 +160,40 @@ def _comp_probs_t(df: pd.DataFrame, by: List) -> pd.DataFrame:
     df0 = df[df.kind == 'generic']
     grp0 = df0.groupby(['corpus', 'author'])
     df_summary = grp0.agg({'value': ['mean', 'std', 'median', 'count']}, as_index=False).reset_index()
-    print("======= Average values of within and between corpus discrepancies =======")
+    print("======= Average value of within and between corpus discrepancies =======")
     print(df_summary[df_summary[('value', 'count')] > 1])
 
     df1 = df[df.kind != 'generic']
 
     value = 'value'
-    EPS = 0.1
-    df1.loc[:, 'value'] = np.sqrt(np.maximum(df1.value, EPS))
 
     df0 = df1[df1.doc_id == df1.doc_tested]
     df1 = df1.drop(df0.index)  # remove generic tests
 
     grp = df1.groupby(by)
 
-    res = grp.agg({value: ['mean', 'std', 'median', 'mad', 'count']}, as_index=False).reset_index()
+    res = grp.agg({value: ['mean', 'std', 'median', 'mad', 'count']},
+                  as_index=False).reset_index()
 
     res.loc[:, 'doc_id'] = res['doc_tested']
 
     dfm = df0.merge(res[['doc_id', 'corpus', 'value']],
-                    on=['doc_id', 'corpus'], how='left')  # only include results for generic chapters
+                    on=['doc_id', 'corpus'], how='left')  # only include
+    # results for generic chapters
 
     mu = dfm[(value, 'mean')]
-    std = dfm[(value, 'std')]  # note that there is no need to adjust
+    s = dfm[(value, 'std')]  # note that there is no need to adjust
     # for the number of DoF by multiplying by np.sqrt(n / (n - 1))
     # because the 'std' function of pandas uses (n-1) in denominator
     # when computing the std
     n = dfm[(value, 'count')]
 
-    median = dfm[(value, 'median')]
-
     dfm.loc[:, 'rank_pval'] = 1 - dfm['rank']
-    dfm.loc[:, 't-score'] = (dfm[value] - mu) / (std)
-    dfm.loc[:, 't_test'] = -np.log(scipy.stats.t.sf(dfm['t-score'], df=n - 1))
+    dfm.loc[:, 't-score'] = (dfm[value] - mu) / (s * np.sqrt(1 + 1 / n))
+    if log_scale:
+        dfm.loc[:, 't_test'] = -np.log(scipy.stats.t.sf(dfm['t-score'], df=n - 1))
+    else:
+        dfm.loc[:, 't_test'] = scipy.stats.t.sf(dfm['t-score'], df=n - 1)
     dfm.loc[:, 'author'] = dfm.author.apply(_get_author_from_doc_id)
     return dfm
 
@@ -191,7 +214,9 @@ def comp_probs(sim_full_res, params_report):
     if params_report['anova']:
         dfm = _comp_probs_anova(df)
     else:
-        dfm = _comp_probs_t(df, by=['author', 'doc_tested', 'corpus'])
+        dfm = _comp_probs_t(df, by=['author', 'doc_tested',
+                                    'corpus', 'itr_BS'],
+                                    log_scale=params_report['log_scale'])
     return dfm
 
 
@@ -225,12 +250,37 @@ def report_probs_t(dfm, params_report):
                      [value, 'rank_pval', 't_pval', 't-score']).reset_index()
 
 
+def max_value_cls_accuracy(dfr, value):
+    idx_score = dfr.groupby('doc_tested')[value].idxmin()
+    return (dfr.loc[idx_score, 'corpus'] == dfr.loc[idx_score, 'author']).mean()
+
+
+def max_value_cls_miss(dfr, value):
+    idx_score = dfr.groupby('doc_tested')[value].idxmin()
+    dfr_res = dfr.loc[idx_score]
+    dfr_miss = dfr_res[dfr_res['corpus'] != dfr_res['author']]
+    return dfr_miss.filter(['doc_id', 'corpus', value])
+
+
+def summarize_probs_BS(dfm, params):
+    """
+    Evaluates accuracy and other stats for
+     each BS iteration
+    """
+
+    grp = dfm.groupby('itr_BS')
+    res = pd.DataFrame()
+    for c in grp:
+        r = summarize_probs(c[1], params)
+        res = res.append(r, ignore_index=True)
+    print(res)
+    return res
+
+
 def summarize_probs(dfm, params):
     """
     Print summary from probabilities evaluated in comp_probs
-    This function is mostly here to provide information for
-    debugging purposes.
-
+    This function is mostly for debugging purposes.
     """
 
     if params['anova']:
@@ -239,77 +289,40 @@ def summarize_probs(dfm, params):
         test_value_name = 't_test'
     value = params['value']
 
-    dfm.loc[:, 'sig_pval'] = dfm[test_value_name] < params['sig_level']
+    if params['log_scale']:
+        dfm.loc[:, 'sig_pval'] = np.exp(-dfm[test_value_name]) < params['sig_level']
+    else:
+        dfm.loc[:, 'sig_pval'] = dfm[test_value_name] < params['sig_level']
     print("========================RESULTS================================")
 
     dfm.loc[:, 'author'] = dfm.doc_tested.apply(_get_author_from_doc_id)
     dfr = dfm[dfm.author.isin(params['known_authors'])]
 
-    idx_score_val = dfr.groupby('doc_tested')['value'].idxmin()
-    print(f"Accuracy with {value}: ",
-          (dfr.loc[idx_score_val, 'corpus'] == dfr.loc[idx_score_val, 'author']).mean())
+    acc_val = max_value_cls_accuracy(dfr, 'value')
+    acc_test = max_value_cls_accuracy(dfr, test_value_name)
+    miss_cls = max_value_cls_miss(dfr, test_value_name)
 
-    idx_score = dfr.groupby('doc_tested')[test_value_name].idxmin()
-    print(f"Accuracy with {test_value_name} of {value}: ",
-          (dfr.loc[idx_score, 'corpus'] == dfr.loc[idx_score, 'author']).mean())
-
-
+    print(f"Accuracy with {value}: ", acc_val)
+    print(f"Accuracy with {test_value_name} of {value}: ", acc_test)
     print(f"Misclassified with {test_value_name}:")
-    idx_miss = [idx for idx in idx_score if dfr.loc[idx, 'author'] != dfr.loc[idx, 'corpus']]
+    print(miss_cls)
 
-    print(dfr.loc[idx_miss, :])
-
-    print(f"False Negatives with {test_value_name}:")
+    print(f"False Alarms with {test_value_name}:")
     print(dfr[(dfr.author == dfr.corpus) & dfr.sig_pval])
-    print(f"False 'Positives' with {test_value_name}:")
-    print(dfr[(dfr.author != dfr.corpus) & ~dfr.sig_pval])
+
     df_res = dfr[dfr.author == dfr.corpus] \
         .groupby(['variable']) \
         .mean() \
         .filter(['sig_pval']) \
         .rename(columns={'sig_pval': f'FNR-{test_value_name}'})
-    print(f"False negative rates over {len(dfr)} chapters of known authorship:")
+    print(f"False alarm rate over {len(dfr)} chapters of known authorship:")
     print(df_res)
-    return df_res
 
-
-def summarize_probs_t(dfm, params):
-    """
-    Print summary from probabilities evaluated in comp_probs
-    This function is mostly here to provide information for
-    debugging purposes.
-
-    """
-
-    dfm.loc[:, 'sig_t'] = dfm['t_pval'] < params['sig_level']
-    dfm.loc[:, 'sig_rank'] = dfm['rank_pval'] < params['sig_level']
-
-    print("========================RESULTS================================")
-    dfr = dfm[dfm.author.isin(params['known_authors'])]
-    idx_var = dfr.groupby('doc_id')['value'].idxmin()
-    idx_tscore = dfr.groupby('doc_id')['t-score'].idxmin()
-    print(f"Accuracy with {dfr['variable'].unique()}: ",
-          (dfr.loc[idx_var, 'corpus'] == dfr.loc[idx_var, 'author']).mean())
-    print(f"Accuracy with t score: ",
-          (dfr.loc[idx_tscore, 'corpus'] == dfr.loc[idx_tscore, 'author']).mean())
-
-    print("Misclassified with t score:")
-    idx_miss = [idx for idx in idx_tscore if dfr.loc[idx, 'author'] != dfr.loc[idx, 'corpus']]
-
-    print(dfr.loc[idx_miss, :])
-
-    print("False Negatives with t test:")
-    print(dfr[(dfr.author == dfr.corpus) & dfr.sig_t])
-    print("False 'Positives' with t test:")
-    print(dfr[(dfr.author != dfr.corpus) & ~dfr.sig_t])
-    df_res = dfr[dfr.author == dfr.corpus] \
-        .groupby(['variable']) \
-        .mean() \
-        .filter(['sig_t', 'sig_rank']) \
-        .rename(columns={'sig_t': 'FNR-t', 'sig_rank': 'FNR-rank'})
-    print(f"False negative rates over {len(dfr)} chapters of known authorship:")
-    print(df_res)
-    return df_res
+    return {'acc_value': acc_val,
+            'acc_test': acc_test,
+            'miss_classified': miss_cls,
+            'FNR': df_res.values[0]
+            }
 
 
 def _arrange_metadata(df, value):
@@ -331,7 +344,6 @@ def report_table(df, report_params):
     value = report_params['value']
     df = _arrange_metadata(df, value)
 
-    known_authors = report_params['known_authors']
     df1 = df.copy()
     df1 = df1.reset_index()
     df1 = df1[df1.len >= report_params['min_length_to_report']]
@@ -439,21 +451,22 @@ def report_table_len(df, params_report):
     # average over chunk_len
     df_res['succ'] = df_res['succ'] + .0
     grp = df_res.groupby('chunk_size')
-    res = grp.agg({'succ': ['mean']}, as_index=False).reset_index()
+    res = grp.agg({'succ': ['mean','std','count']}, as_index=False).reset_index()
 
-    res[f'succ_mean'] = res[('succ', 'mean')]
-    res = res.drop('succ', axis=1, level=0)
-
+    print(res)
     return res
 
 
 def _arrange_sim_full_results(res):
     """
-    For HC, use max(HC, 1)
+    For HC, use max(HC, min_value)
     """
     min_value_hc = -5.0
     idcs = res.variable.str.contains(':HC')
     res.loc[idcs, 'value'] = np.maximum(res.loc[idcs, 'value'], min_value_hc)
+    if 'itr_BS' not in res.columns: # so that other functions be
+                                    # compatible with bootstraping
+        res.iloc[:, 'itr_BS'] = 0
     return res
 
 

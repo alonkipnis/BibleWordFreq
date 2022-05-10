@@ -9,6 +9,7 @@ from typing import Dict, List
 from biblical_scripts.pipelines.sim.nodes import (
     build_model, model_predict, _prepare_data)
 from sklearn.model_selection import KFold
+from biblical_scripts.pipelines.data_engineering.nodes import build_vocab
 
 
 def _val_pipeline(data_train: pd.DataFrame, data_test: pd.DataFrame,
@@ -26,7 +27,7 @@ def _val_pipeline(data_train: pd.DataFrame, data_test: pd.DataFrame,
     return df1
 
 
-def cross_validation(data, vocabulary, model_params):
+def cross_validation(data, params_vocab, params_model):
     """
     Evaluate doc-corpus similarities of documents in a
     cross validation setting. If n_fold is not provided 
@@ -45,16 +46,22 @@ def cross_validation(data, vocabulary, model_params):
     lo_docs = ds.doc_id.unique()
     n_known = len(lo_docs)
 
-    n_fold = model_params.get('n_fold', n_known)  # defult is leave-one-out
+    n_fold = params_model.get('n_fold', n_known)  # defult is leave-one-out
+    if n_fold < 0:
+        n_fold = n_known
 
     kf = KFold(n_splits=n_fold, shuffle=True)
 
     res = pd.DataFrame()
     for train_index, test_index in kf.split(lo_docs):
         docs_train, docs_test = lo_docs[train_index], lo_docs[test_index]
-        rec = _val_pipeline(ds[ds.doc_id.isin(docs_train)],
+        data_train = ds[ds.doc_id.isin(docs_train)]
+        #
+        vocabulary = build_vocab(data_train, params_vocab)
+        print(f"Docs in test set: {docs_test}")
+        rec = _val_pipeline(data_train,
                             ds[ds.doc_id.isin(docs_test)],
-                            vocabulary, model_params)
+                            vocabulary, params_model)
         res = res.append(rec, ignore_index=True)
 
     res['n_fold'] = n_fold
@@ -83,7 +90,7 @@ def bagging(data, vocabulary, model_params, bagging_params):
             # >>>HERE!!
             # ask Shira why do we need bagging. 
             # usually bagging is for ensemble methods, but here
-            # it looks like we want to use it to evalaute robustness ?!
+            # it looks like we want to use it to evaluate robustness ?!
 
             bs_ds_train = grp['doc_id'].sample(frac=.8)
             bs_ds_test = grp['doc_id'][grp['doc_id'] != bs_ds_train]

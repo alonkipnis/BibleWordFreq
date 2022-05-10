@@ -8,10 +8,11 @@ on each one.
 
 from kedro.pipeline import node, Pipeline
 from biblical_scripts.pipelines.sim.nodes import filter_by_author
-from biblical_scripts.pipelines.reporting.nodes import add_stats_BS
+from biblical_scripts.pipelines.reporting.nodes import (
+    add_stats_BS, add_stats_BS_full, comp_probs,
+    summarize_probs_BS)
 
-from .nodes import bs_main_val
-
+from .nodes import bs_main_val, bs_main_full
 
 def create_pipeline(**kwargs):
     return Pipeline(
@@ -22,17 +23,34 @@ def create_pipeline(**kwargs):
              outputs="data",
              name="filter_by_author"
             ),
-        node(func=bs_main_val,
+        node(func=bs_main_full,
              inputs=["data", "params:bootstrapping",
-             "vocabulary", "params:model", "params:known_authors"],
+             "params:vocab", "params:model", "params:sim_full",
+                     "params:known_authors", "params:report",
+                     "reference_data"],
              outputs="sim_res_BS",
             name="bs_main_val"
             ),
-        node(func=add_stats_BS,
-            inputs=["sim_res_BS", "params:report"],
-            outputs="sim_res_BS_stats",
-            name="add_stats_BS"
-            ),
+        # node(func=add_stats_BS,
+        #     inputs=["sim_res_BS", "params:report"],
+        #     outputs="sim_res_BS_stats",
+        #     name="add_stats_BS"
+        #     ),
+        #     node(func=add_stats_BS_full,
+        #          inputs=["sim_res_BS", "params:report"],
+        #          outputs="probs_BS",
+        #          name="add_stats_BS_full"
+        #          ),
+        #     node(func=comp_probs,
+        #          inputs=["sim_res_BS", "params:report"],
+        #          outputs="probs_BS",
+        #          name="comp_probs"
+        #          ),
+            # node(func=summarize_probs_BS,
+            #      inputs=["probs_BS", "params:report"],
+            #      outputs="summary",
+            #      name="summarize_probs_BS"
+            #      ),
         ], tags='bootstrap'
     )
 

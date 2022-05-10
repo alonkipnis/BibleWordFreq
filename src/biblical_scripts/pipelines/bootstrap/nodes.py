@@ -18,14 +18,15 @@ from typing import Dict, List
 from biblical_scripts.pipelines.sim_full.nodes import sim_full
 from biblical_scripts.pipelines.sim_val.nodes import cross_validation
 
-from dask.distributed import Client, progress
+from dask.distributed import Client, progress, LocalCluster
+from biblical_scripts.pipelines.reporting.nodes import comp_probs, summarize_probs
 
 
-
-def bs_main_full(data, params_bs, vocabulary, params_model, params_sim,
-         known_authors) :
+def bs_main_full(data, params_bs, params_vocab,
+                 params_model, params_sim_full,
+                 known_authors, reference_data):
     """
-    Run full experiment after sampling original dataset 
+    Run basic experiment after sampling original dataset
     (each row is a feature) with replacements.
     
     Returns:
@@ -36,15 +37,15 @@ def bs_main_full(data, params_bs, vocabulary, params_model, params_sim,
     res = pd.DataFrame()
     for itr in range(params_bs['nBS']) :
         data_bs = data.sample(n=len(data), replace=True)
-        res1 = sim_full(data_bs, vocabulary, params_model,
-        params_sim, known_authors)
+        res1 = sim_full(data_bs, params_vocab, params_model,
+        params_sim_full, known_authors, reference_data)
         res1['itr_BS'] = itr
         res = res.append(res1, ignore_index=True)
     return res
 
-def bs_main_val(data, params_bs, vocabulary, params_model, known_authors) :
+def bs_main_val(data, params_bs, params_vocab, params_model):
     """
-    Run full experiment after sampling original dataset 
+    Run CV experiment after sampling original dataset
     (each row is a feature) with replacements.
     
     Returns:
@@ -55,16 +56,16 @@ def bs_main_val(data, params_bs, vocabulary, params_model, known_authors) :
     res = pd.DataFrame()
     for itr in tqdm(range(params_bs['nBS'])) :
         data_bs = data.sample(n=len(data), replace=True)
-        res1 = cross_validation(data_bs, vocabulary, params_model)
+        res1 = cross_validation(data_bs, params_vocab, params_model)
         res1['itr_BS'] = itr
         res = res.append(res1, ignore_index=True)
     return res
      
-#import warnings
-#warnings.filterwarnings("error")
 
-def bs_main_full_dist(data, params_bs, vocabulary,
-                 params_model, params_sim, known_authors) :
+def bs_main_full(data, params_bs, params_vocab,
+                 params_model, params_sim_full,
+                 known_authors, report_params,
+                 reference_data):
     """
     Run full experiment after sampling original dataset (each row is a feature)
      with replacements.
@@ -77,13 +78,21 @@ def bs_main_full_dist(data, params_bs, vocabulary,
 
     def func(i) :
         data_bs = data.sample(n=len(data), replace=True)
-        res1 = sim_full(data_bs, vocabulary, params_model,
-        params_sim, known_authors)
-        res1['itr_BS'] = i
-        print(i)
-        return res1
-    
-    client = Client()
+        res_itr = sim_full(data_bs, params_vocab, params_model,
+        params_sim_full, known_authors, reference_data)
+
+        probs = comp_probs(res_itr, report_params)
+        res = summarize_probs(probs)
+        res['itr_BS'] = i
+        return res
+
+    cluster = LocalCluster(
+        n_workers=3,
+        memory_limit="4GB",
+        threads_per_worker=1,
+        processes=True,
+    )
+    client = Client(cluster)
     logging.info("********************************************")
     logging.info(f"Dask client info: {client}")
     logging.info("************************************************")

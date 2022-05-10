@@ -58,7 +58,7 @@ def create_pipeline(**kwargs):
                  name="filter_by_author"
                  ),
             node(func=sim_full,
-                 inputs=["data", "vocabulary", "params:model",
+                 inputs=["data", "params:vocab", "params:model",
                          "params:sim_full", "params:known_authors",
                          "reference_data"
                          ],

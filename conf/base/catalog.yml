@@ -6,7 +6,7 @@
 oshb_raw:
   type: biblical_scripts.extras.datasets.OSHBDataset.OSHB
   morphhb_path: data/01_raw/morphhb/wlc
-  catalog_file: data/01_raw/reference_data.csv
+  catalog_file: data/01_raw/reference_data_w_Deut28.csv
   out_file: data/01_raw/project_data.csv
   
 oshb_parsed:
@@ -15,7 +15,7 @@ oshb_parsed:
 
 reference_data:
   type: pandas.CSVDataSet
-  filepath: data/01_raw/reference_data.csv
+  filepath: data/01_raw/reference_data_w_Deut28.csv
 
 chapters_to_report:
   type: pandas.CSVDataSet
@@ -114,7 +114,12 @@ probs:
   type: pandas.CSVDataSet
   filepath: data/07_sim_output/probs.csv
   versioned: false
-  
+
+probs_BS:
+  type: pandas.CSVDataSet
+  filepath: data/07_sim_output/probs_BS.csv
+  versioned: false
+
 probs_table:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/probs_table.csv
