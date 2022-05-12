@@ -109,7 +109,7 @@ report:
   - Deut4
 
 bootstrapping:
-  nBS: 5
+  nBS: 20
   value: 'HC'
   reduce_feature: None
 

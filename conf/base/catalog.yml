@@ -63,7 +63,7 @@ sim_full_res:
 sim_res_BS:
   type: pandas.CSVDataSet
   filepath: data/07_sim_output/sim_full_res_BS.csv
-  versioned: false
+  versioned: true
 
 sim_res_BS_stats:
   type: pandas.CSVDataSet

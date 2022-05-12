@@ -12,7 +12,7 @@ from biblical_scripts.pipelines.reporting.nodes import (
     add_stats_BS, add_stats_BS_full, comp_probs,
     summarize_probs_BS)
 
-from .nodes import bs_main_val, bs_main_full
+from .nodes import bs_main_val, bs_main_full, bs_main_full_dask
 
 def create_pipeline(**kwargs):
     return Pipeline(

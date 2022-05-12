@@ -62,7 +62,7 @@ def bs_main_val(data, params_bs, params_vocab, params_model):
     return res
      
 
-def bs_main_full(data, params_bs, params_vocab,
+def bs_main_full_dask(data, params_bs, params_vocab,
                  params_model, params_sim_full,
                  known_authors, report_params,
                  reference_data):
@@ -82,9 +82,9 @@ def bs_main_full(data, params_bs, params_vocab,
         params_sim_full, known_authors, reference_data)
 
         probs = comp_probs(res_itr, report_params)
-        res = summarize_probs(probs)
+        res = summarize_probs(probs, report_params)
         res['itr_BS'] = i
-        return res
+        return pd.DataFrame(res, index=[0])
 
     cluster = LocalCluster(
         n_workers=3,
@@ -106,3 +106,33 @@ def bs_main_full(data, params_bs, params_vocab,
     return pd.concat(res)
 
 
+def bs_main_full(data, params_bs, params_vocab,
+                 params_model, params_sim_full,
+                 known_authors, report_params,
+                 reference_data):
+    """
+    Run full experiment after sampling original dataset (each row is a feature)
+     with replacements.
+
+    Returns:
+    res    :    original sim_full output with additional iteration indicator
+    """
+
+    pd.options.mode.chained_assignment = None
+
+    def func(i):
+        data_bs = data.sample(n=len(data), replace=True)
+        res_itr = sim_full(data_bs, params_vocab, params_model,
+                           params_sim_full, known_authors, reference_data)
+
+        probs = comp_probs(res_itr, report_params)
+        res = summarize_probs(probs, report_params)
+        res['itr_BS'] = i
+        return pd.DataFrame(res, index=[0])
+
+    res = pd.DataFrame()
+    for i in range(params_bs['nBS']):
+        r = func(i)
+        res = res.append(r, ignore_index=True)
+    print(res)
+    return res

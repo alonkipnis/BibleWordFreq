@@ -53,7 +53,7 @@ def add_stats_BS_full(sim_full_res, params_report):
         dfm = _comp_probs_anova(df)
     else:
         dfm = _comp_probs_t(df, by=['author', 'doc_tested',
-                                    'corpus', 'itr_BS'],
+                                    'corpus'],
                             log_scale=params_report['log_scale'])
     return dfm
 
@@ -215,7 +215,7 @@ def comp_probs(sim_full_res, params_report):
         dfm = _comp_probs_anova(df)
     else:
         dfm = _comp_probs_t(df, by=['author', 'doc_tested',
-                                    'corpus', 'itr_BS'],
+                                    'corpus'],
                                     log_scale=params_report['log_scale'])
     return dfm
 
@@ -320,7 +320,7 @@ def summarize_probs(dfm, params):
 
     return {'acc_value': acc_val,
             'acc_test': acc_test,
-            'miss_classified': miss_cls,
+            #'miss_classified': miss_cls,
             'FNR': df_res.values[0]
             }
 
@@ -464,9 +464,6 @@ def _arrange_sim_full_results(res):
     min_value_hc = -5.0
     idcs = res.variable.str.contains(':HC')
     res.loc[idcs, 'value'] = np.maximum(res.loc[idcs, 'value'], min_value_hc)
-    if 'itr_BS' not in res.columns: # so that other functions be
-                                    # compatible with bootstraping
-        res.iloc[:, 'itr_BS'] = 0
     return res
 
 
