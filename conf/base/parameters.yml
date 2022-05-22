@@ -6,7 +6,7 @@ preprocessing:
   flat_suff_person: true  # remove person-form indicator, or not
   ng_min: 1  # min_ngram
   ng_max: 1  # max_ngram (must be larger than ng_min)
-  pad: true # add <start>/<end> symbols at the begining/ending of verses
+  pad: false # add <start>/<end> symbols at the begining/ending of verses
   to_remove: # morpholical pad_ledcodes to remove (Np = proper name, Ng = gentilic noun),
              # see https://hb.openscriptures.org/parsing/HebrewMorphologyCodes.html
     - "FFF"  # that's a placeholder
