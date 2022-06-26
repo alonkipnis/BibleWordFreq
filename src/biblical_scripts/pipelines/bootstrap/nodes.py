@@ -18,7 +18,7 @@ from typing import Dict, List
 from biblical_scripts.pipelines.sim_full.nodes import sim_full
 from biblical_scripts.pipelines.sim_val.nodes import cross_validation
 
-from dask.distributed import Client, progress, LocalCluster
+#from dask.distributed import Client, progress, LocalCluster
 from biblical_scripts.pipelines.reporting.nodes import comp_probs, summarize_probs
 
 

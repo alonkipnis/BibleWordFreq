@@ -24,13 +24,12 @@ preprocessing:
     #- Vq # verb
 
 vocab:
-  no_tokens: 1000  # most frequent tokens
+  no_tokens: 3000  # most frequent tokens
   by_author: true  # most frequent by each author of the known_authors list
   authors:
     - Dtr
     - DtrH
     - P
-
 
 model:
   feat_reduction_method: "none" # options are: div_persuit, one_vs_many, none
@@ -42,7 +41,7 @@ model:
     - 'Fisher' # Fisher's combination test
     - 'majority'
     #- 'chisq' # chisquared test
-  n_fold: 4
+  n_fold: 2 # number of splits in CV mode
 
 known_authors:
   - Dtr
