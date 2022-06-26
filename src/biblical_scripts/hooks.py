@@ -68,19 +68,19 @@ class ProjectHooks:
         features_pipeline = features.create_pipeline()
 
         return {
-            "oshb" : oshb_pipeline,
-            "de" : de_pipeline,
-            "sim_val" : ds_val_pipeline,
-            "sim" : sim_only_pipeline,
-            "sim_full" : de_pipeline + sim_pipeline,
-            "plot" : plot_pipeline,
-            "sim_bs" : bs_pipeline,
-            "report" : report_pipeline,
-            "chunk_len" : chunk_len_pipeline,
-            "features" : features_pipeline,
-            "all" : oshb_pipeline+de_pipeline+sim_pipeline+plot_pipeline+report_pipeline,
-            "de+sim" : de_pipeline + sim_only_pipeline,
-            "__default__" :  de_pipeline+sim_pipeline+plot_pipeline+report_pipeline}
+            "oshb": oshb_pipeline,
+            "de": de_pipeline,
+            "sim_val": ds_val_pipeline,
+            "sim": sim_only_pipeline,
+            "sim_full": de_pipeline + sim_pipeline,
+            "plot": plot_pipeline,
+            "sim_bs": bs_pipeline,
+            "report": report_pipeline,
+            "chunk_len": chunk_len_pipeline,
+            "features": features_pipeline,
+            "all": oshb_pipeline + de_pipeline + sim_pipeline,
+            "de+sim": de_pipeline + sim_only_pipeline,
+            "__default__":  all}
 
     @hook_impl
     def register_config_loader(self, conf_paths: Iterable[str]) -> ConfigLoader:

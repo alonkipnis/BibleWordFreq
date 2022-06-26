@@ -6,7 +6,7 @@
 oshb_raw:
   type: biblical_scripts.extras.datasets.OSHBDataset.OSHB
   morphhb_path: data/01_raw/morphhb/wlc
-  catalog_file: data/01_raw/reference_data_w_Deut28.csv
+  catalog_file: data/01_raw/reference_data_no_outliers.csv
   out_file: data/01_raw/project_data.csv
   
 oshb_parsed:

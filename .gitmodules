@@ -1,3 +1,7 @@
 [submodule "data/01_raw/morphhb"]
 	path = data/01_raw/morphhb
 	url = https://github.com/openscriptures/morphhb.git
+
+[submodule "src/biblical_scripts/extras/AuthAttLib"]
+	path = src/biblical_scripts/extras/AuthAttLib
+	url = https://github.com/alonkipnis/AuthAttLib.git
