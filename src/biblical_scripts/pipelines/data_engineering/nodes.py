@@ -44,6 +44,14 @@ def _n_most_frequent_by_author(ds, n):
         .groupby(['author']) \
         .head(n).filter(['feature'])
 
+def _n_most_frequent_by_author(ds, n):
+    return ds.groupby(['author', 'feature']) \
+        .count() \
+        .sort_values(by='token_id', ascending=False) \
+        .reset_index() \
+        .groupby(['author']) \
+        .head(n).filter(['feature'])
+
 
 def _n_most_frequent(ds, n):
     return ds.groupby(['feature']) \
